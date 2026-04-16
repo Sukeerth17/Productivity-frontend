@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Quicksand:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 150 14% 96%;
+    --foreground: 234 21% 22%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 234 21% 22%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 234 21% 22%;
+
+    --primary: 0 100% 71%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 150 14% 96%;
+    --secondary-foreground: 234 21% 22%;
+
+    --muted: 219 14% 60%;
+    --muted-foreground: 219 14% 60%;
+
+    --accent: 174 55% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 234 21% 22%;
+    --input: 219 14% 85%;
+    --ring: 0 100% 71%;
+
+    --radius: 20px;
+
+    /* Category colors */
+    --cat-college: 49 100% 71%;
+    --cat-health: 174 55% 55%;
+    --cat-work: 271 72% 59%;
+
+    /* Custom tokens */
+    --shadow-tactile: 0 6px 0px rgba(43, 45, 66, 0.1);
+    --shadow-tactile-hover: 0 8px 0px rgba(43, 45, 66, 0.15);
+    --shadow-button: 0 4px 0px;
+    --border-thick: 2px;
+    --radius-button: 12px;
+    --radius-inner: 12px;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 600;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+  }
+}
+
+@layer components {
+  .shadow-tactile {
+    box-shadow: var(--shadow-tactile);
+  }
+  .shadow-tactile-hover {
+    box-shadow: var(--shadow-tactile-hover);
+  }
+  .border-game {
+    border: var(--border-thick) solid hsl(var(--foreground));
+  }
+  .btn-press:active {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0px rgba(43, 45, 66, 0.1);
+  }
+  .card-game {
+    @apply bg-card rounded-[20px] border-game shadow-tactile transition-all duration-200;
+  }
+  .card-game:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-tactile-hover);
+  }
+}

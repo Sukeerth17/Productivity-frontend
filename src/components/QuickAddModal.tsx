@@ -1,0 +1,113 @@
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X } from "lucide-react";
+import type { Category, Task } from "@/lib/store";
+import { getCategoryColorHex } from "@/lib/store";
+
+interface QuickAddModalProps {
+  open: boolean;
+  onClose: () => void;
+  categories: Category[];
+  onAdd: (task: Omit<Task, "id" | "createdAt">) => void;
+}
+
+export default function QuickAddModal({ open, onClose, categories, onAdd }: QuickAddModalProps) {
+  const [title, setTitle] = useState("");
+  const [catId, setCatId] = useState(categories[0]?.id || "");
+  const [isHabit, setIsHabit] = useState(false);
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
+
+  useEffect(() => {
+    if (categories.length > 0 && !catId) {
+      setCatId(categories[0].id);
+    }
+  }, [categories, catId]);
+
+  const handleSubmit = () => {
+    if (!title.trim() || !catId) return;
+    onAdd({ title: title.trim(), categoryId: catId, completed: false, isHabit, priority, subTasks: [] });
+    setTitle("");
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          onClick={onClose}
+        >
+          <motion.div
+            className="card-game w-[420px] p-6"
+            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-heading text-xl font-bold">Quick Add</h3>
+              <button onClick={onClose} className="p-1"><X size={20} /></button>
+            </div>
+
+            <input
+              className="w-full border-game rounded-inner px-4 py-3 font-heading text-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary mb-4"
+              placeholder="What needs doing?"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+              autoFocus
+            />
+
+            <p className="text-xs font-bold uppercase tracking-wider text-muted mb-2">Category</p>
+            <div className="flex gap-2 mb-4 flex-wrap">
+              {categories.map((c) => (
+                <button
+                  key={c.id}
+                  className={`w-10 h-10 rounded-full border-game transition-transform ${catId === c.id ? "scale-110 ring-2 ring-foreground" : ""}`}
+                  style={{ backgroundColor: getCategoryColorHex(c.color) }}
+                  onClick={() => setCatId(c.id)}
+                />
+              ))}
+            </div>
+
+            <div className="flex gap-3 mb-4">
+              <button
+                className={`flex-1 py-2 rounded-inner border-game font-heading font-bold text-sm btn-press ${!isHabit ? "bg-primary text-primary-foreground" : "bg-card"}`}
+                onClick={() => setIsHabit(false)}
+              >
+                One-off Task
+              </button>
+              <button
+                className={`flex-1 py-2 rounded-inner border-game font-heading font-bold text-sm btn-press ${isHabit ? "bg-primary text-primary-foreground" : "bg-card"}`}
+                onClick={() => setIsHabit(true)}
+              >
+                Habit
+              </button>
+            </div>
+
+            <p className="text-xs font-bold uppercase tracking-wider text-muted mb-2">Priority</p>
+            <div className="flex gap-2 mb-5">
+              {(["low", "medium", "high"] as const).map((p) => (
+                <button
+                  key={p}
+                  className={`flex-1 py-2 rounded-inner border-game font-heading font-bold text-xs uppercase btn-press ${priority === p ? "bg-foreground text-card" : "bg-card"}`}
+                  onClick={() => setPriority(p)}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+
+            <motion.button
+              className="w-full py-3 rounded-inner border-game bg-primary text-primary-foreground font-heading font-bold uppercase tracking-wider shadow-tactile btn-press"
+              onClick={handleSubmit}
+              disabled={!catId}
+              whileTap={{ scale: 0.97 }}
+            >
+              {catId ? "Add Task" : "Create a category first"}
+            </motion.button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
