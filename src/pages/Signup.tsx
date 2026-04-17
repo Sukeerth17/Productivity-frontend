@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Flame } from "lucide-react";
+import { Eye, EyeOff, Flame } from "lucide-react";
 import { z } from "zod";
 
 import { useAuth } from "@/lib/auth";
@@ -25,6 +25,8 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -89,26 +91,46 @@ export default function Signup() {
 
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-muted">Password</label>
-            <input
-              className="mt-1 w-full border-game rounded-inner px-4 py-3 font-body bg-card focus:outline-none focus:ring-2 focus:ring-primary"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
-              autoComplete="new-password"
-            />
+            <div className="mt-1 relative">
+              <input
+                className="w-full border-game rounded-inner px-4 py-3 pr-12 font-body bg-card focus:outline-none focus:ring-2 focus:ring-primary"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 8 characters"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-3 flex items-center text-muted hover:text-foreground"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-muted">Confirm Password</label>
-            <input
-              className="mt-1 w-full border-game rounded-inner px-4 py-3 font-body bg-card focus:outline-none focus:ring-2 focus:ring-primary"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repeat password"
-              autoComplete="new-password"
-            />
+            <div className="mt-1 relative">
+              <input
+                className="w-full border-game rounded-inner px-4 py-3 pr-12 font-body bg-card focus:outline-none focus:ring-2 focus:ring-primary"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Repeat password"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-3 flex items-center text-muted hover:text-foreground"
+                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {error ? <p className="text-sm text-primary font-bold">{error}</p> : null}
