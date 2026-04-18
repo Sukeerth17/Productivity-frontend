@@ -54,8 +54,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="card-game w-full max-w-md p-8">
+    <div className="min-h-screen bg-background flex items-start sm:items-center justify-center px-4 py-6 sm:px-6">
+      <div className="card-game w-full max-w-md p-5 sm:p-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center border-game">
             <Flame size={20} className="text-primary" />

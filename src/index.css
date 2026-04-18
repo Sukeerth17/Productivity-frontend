@@ -64,10 +64,17 @@
   * {
     @apply border-border;
   }
+  html, body, #root {
+    min-height: 100%;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: 'Quicksand', sans-serif;
     font-weight: 600;
+    margin: 0;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overscroll-behavior-y: none;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Nunito', sans-serif;
@@ -95,5 +102,12 @@
   .card-game:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-tactile-hover);
+  }
+}
+
+@media (max-width: 768px) {
+  .card-game:hover {
+    transform: none;
+    box-shadow: var(--shadow-tactile);
   }
 }

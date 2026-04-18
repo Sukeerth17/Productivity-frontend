@@ -27,12 +27,12 @@ export default function CategoryManager() {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <div className="max-w-xl mx-auto px-8 py-8">
+      <div className="max-w-xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
         <div className="flex items-center gap-3 mb-8">
           <button onClick={() => navigate("/")} className="w-10 h-10 rounded-full border-game flex items-center justify-center btn-press">
             <ArrowLeft size={18} />
           </button>
-          <h1 className="text-2xl font-heading font-extrabold">Manage Categories</h1>
+          <h1 className="text-xl sm:text-2xl font-heading font-extrabold">Manage Categories</h1>
         </div>
 
         <p className="text-xs font-bold uppercase tracking-wider text-muted mb-3">Active Categories</p>
@@ -40,7 +40,7 @@ export default function CategoryManager() {
           {store.categories.map((cat) => {
             const colorHex = getCategoryColorHex(cat.color);
             return (
-              <motion.div key={cat.id} className="card-game px-4 py-4 flex items-center gap-3" layout>
+              <motion.div key={cat.id} className="card-game px-3 sm:px-4 py-4 flex items-center gap-2 sm:gap-3" layout>
                 <GripVertical size={18} className="text-muted cursor-grab" />
                 <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: colorHex }}>
                   <Star size={16} className="text-foreground" />
@@ -55,7 +55,7 @@ export default function CategoryManager() {
                     autoFocus
                   />
                 ) : (
-                  <span className="flex-1 font-heading font-bold text-lg">{cat.name}</span>
+                  <span className="flex-1 font-heading font-bold text-base sm:text-lg break-words">{cat.name}</span>
                 )}
                 <button
                   onClick={() => { setEditingId(cat.id); setEditName(cat.name); }}
@@ -87,11 +87,11 @@ export default function CategoryManager() {
           />
 
           <p className="text-xs font-bold uppercase tracking-wider text-muted mb-2">Choose Color Code</p>
-          <div className="grid grid-cols-6 gap-3 mb-4">
+          <div className="grid grid-cols-5 sm:grid-cols-6 gap-2 sm:gap-3 mb-4">
             {CATEGORY_COLORS.map((c) => (
               <button
                 key={c}
-                className={`w-12 h-12 rounded-full transition-transform ${newColor === c ? "scale-110 ring-4 ring-foreground" : "hover:scale-105"}`}
+                className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full transition-transform ${newColor === c ? "scale-110 ring-4 ring-foreground" : "hover:scale-105"}`}
                 style={{ backgroundColor: c }}
                 onClick={() => setNewColor(c)}
               />

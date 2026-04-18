@@ -34,12 +34,12 @@ export default function QuickAddModal({ open, onClose, categories, onAdd }: Quic
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/30"
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-foreground/30 px-3 py-3 sm:px-0 sm:py-0"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={onClose}
         >
           <motion.div
-            className="card-game w-[420px] p-6"
+            className="card-game w-full max-w-[420px] p-4 sm:p-6 max-h-[92vh] overflow-y-auto"
             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
           >

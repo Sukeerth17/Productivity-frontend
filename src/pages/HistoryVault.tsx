@@ -45,12 +45,12 @@ export default function HistoryVault() {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <div className="max-w-5xl mx-auto px-8 py-8">
-        <h1 className="text-3xl font-heading font-extrabold mb-1">History Vault</h1>
+      <div className="max-w-5xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
+        <h1 className="text-2xl sm:text-3xl font-heading font-extrabold mb-1">History Vault</h1>
         <p className="text-muted text-sm mb-8">Your legacy of consistency.</p>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
           <div className="card-game p-6 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted">Total Momentum</p>
@@ -72,8 +72,8 @@ export default function HistoryVault() {
         </div>
 
         {/* Contribution Grid */}
-        <div className="card-game p-6 mb-8 overflow-x-auto">
-          <div className="flex justify-between items-center mb-4">
+        <div className="card-game p-4 sm:p-6 mb-8 overflow-x-auto">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
             <h2 className="text-lg font-heading font-extrabold">Last 6 Months Activity</h2>
             <div className="flex items-center gap-1 text-xs text-muted">
               Less
@@ -118,11 +118,11 @@ export default function HistoryVault() {
         </div>
 
         {/* Bar chart */}
-        <div className="card-game p-6">
+          <div className="card-game p-4 sm:p-6">
           <h2 className="text-lg font-heading font-extrabold mb-6">30-Day Completion by Category</h2>
-          <div className="flex items-end gap-8 justify-center h-48">
+          <div className="flex items-end gap-4 sm:gap-8 justify-start sm:justify-center h-48 overflow-x-auto pb-1">
             {catStats.map((cat) => (
-              <div key={cat.id} className="flex flex-col items-center gap-2">
+              <div key={cat.id} className="flex flex-col items-center gap-2 min-w-[70px]">
                 <div className="relative w-16" style={{ height: `${Math.max(cat.pct * 1.6, 10)}px` }}>
                   <div
                     className="absolute bottom-0 w-full rounded-t-inner"

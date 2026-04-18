@@ -24,15 +24,15 @@ export default function CategoryDetail() {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <div className="max-w-4xl mx-auto px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
         {/* Hero */}
         <motion.div
-          className="rounded-game overflow-hidden p-8 pb-10 mb-8 relative"
+          className="rounded-game overflow-hidden p-5 sm:p-8 sm:pb-10 mb-6 sm:mb-8 relative"
           style={{ background: `linear-gradient(135deg, ${colorHex}, ${colorHex}cc)` }}
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-5xl font-heading font-extrabold text-foreground mb-1">{category.name}</h1>
-          <p className="font-body text-foreground/70 text-lg">{pct}% Completed</p>
+          <h1 className="text-3xl sm:text-5xl font-heading font-extrabold text-foreground mb-1 break-words">{category.name}</h1>
+          <p className="font-body text-foreground/70 text-base sm:text-lg">{pct}% Completed</p>
           <button
             onClick={() => navigate("/")}
             className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-inner bg-primary text-primary-foreground border-game font-heading font-bold text-sm shadow-tactile btn-press"
@@ -42,9 +42,9 @@ export default function CategoryDetail() {
         </motion.div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-xl font-heading font-extrabold">Active Habits & Tasks</h2>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <button
               onClick={() => { store.deleteCategory(category.id); navigate("/"); }}
               className="px-4 py-2 rounded-inner border-game text-primary font-heading font-bold text-sm flex items-center gap-2 btn-press hover:bg-primary/10"
