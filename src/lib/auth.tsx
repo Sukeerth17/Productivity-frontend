@@ -15,8 +15,32 @@ const USER_KEY = "productvity-auth-user";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignore storage failures in restricted browser modes (e.g. Safari private mode).
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Ignore storage failures in restricted browser modes.
+  }
+}
+
 function loadUser(): AuthUser | null {
-  const raw = localStorage.getItem(USER_KEY);
+  const raw = safeGetItem(USER_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as AuthUser;
@@ -26,12 +50,12 @@ function loadUser(): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+  const [token, setToken] = useState<string | null>(() => safeGetItem(TOKEN_KEY));
   const [user, setUser] = useState<AuthUser | null>(loadUser);
 
   const persist = (nextToken: string, nextUser: AuthUser) => {
-    localStorage.setItem(TOKEN_KEY, nextToken);
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser));
+    safeSetItem(TOKEN_KEY, nextToken);
+    safeSetItem(USER_KEY, JSON.stringify(nextUser));
     setToken(nextToken);
     setUser(nextUser);
   };
@@ -47,8 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    safeRemoveItem(TOKEN_KEY);
+    safeRemoveItem(USER_KEY);
     setToken(null);
     setUser(null);
   };

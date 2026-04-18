@@ -80,7 +80,8 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-3 flex items-center text-muted hover:text-foreground"
+                onPointerDown={(e) => e.preventDefault()}
+                className="absolute inset-y-0 right-1 z-10 flex w-10 items-center justify-center text-muted hover:text-foreground"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
