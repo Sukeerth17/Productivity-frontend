@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Flame } from "lucide-react";
 import { z } from "zod";
 
 import { useAuth } from "@/lib/auth";
+import { warmUpBackend } from "@/lib/api";
 
 const loginSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
+  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
@@ -20,6 +21,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    void warmUpBackend();
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +42,12 @@ export default function Login() {
       const redirectPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/";
       navigate(redirectPath, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to login");
+      const message = err instanceof Error ? err.message : "Unable to login";
+      if (message.toLowerCase().includes("invalid email or password")) {
+        setError("Invalid email or password. If this is your first login, create an account first.");
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }

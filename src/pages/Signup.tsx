@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Flame } from "lucide-react";
 import { z } from "zod";
 
 import { useAuth } from "@/lib/auth";
+import { warmUpBackend } from "@/lib/api";
 
 const signupSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters").max(120, "Name is too long"),
-    email: z.string().email("Enter a valid email address"),
+    email: z.string().trim().toLowerCase().email("Enter a valid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
@@ -29,6 +30,10 @@ export default function Signup() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    void warmUpBackend();
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
