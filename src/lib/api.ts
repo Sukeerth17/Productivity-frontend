@@ -10,6 +10,52 @@ export interface AuthResponse {
   user: AuthUser;
 }
 
+export interface ApiCategory {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  created_at: string;
+}
+
+export interface ApiSubTask {
+  id: string;
+  title: string;
+  completed: boolean;
+  position: number;
+  task_id: string;
+}
+
+export interface ApiTask {
+  id: string;
+  title: string;
+  category_id: string;
+  notes: string | null;
+  completed: boolean;
+  is_habit: boolean;
+  priority: "low" | "medium" | "high" | null;
+  due_time: string | null;
+  created_at: string;
+  completed_at: string | null;
+  updated_at: string;
+  subtasks: ApiSubTask[];
+}
+
+export interface ApiPaginatedTasks {
+  items: ApiTask[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ApiDashboardStats {
+  total_tasks: number;
+  completed_tasks: number;
+  active_tasks: number;
+  categories: number;
+  completion_rate: number;
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 const REQUEST_TIMEOUT_MS = 20_000;
 
@@ -71,6 +117,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(detail);
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json() as Promise<T>;
 }
 
@@ -97,4 +147,75 @@ export function logIn(payload: { email: string; password: string }) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function getCategories() {
+  return request<ApiCategory[]>("/categories");
+}
+
+export function createCategory(payload: { name: string; color: string; icon: string }) {
+  return request<ApiCategory>("/categories", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function patchCategory(categoryId: string, payload: { name?: string; color?: string; icon?: string }) {
+  return request<ApiCategory>(`/categories/${categoryId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteCategory(categoryId: string) {
+  return request<void>(`/categories/${categoryId}`, {
+    method: "DELETE",
+  });
+}
+
+export function getTasks(params?: { categoryId?: string; completed?: boolean; limit?: number; offset?: number }) {
+  const query = new URLSearchParams();
+  if (params?.categoryId) query.set("category_id", params.categoryId);
+  if (typeof params?.completed === "boolean") query.set("completed", String(params.completed));
+  query.set("limit", String(params?.limit ?? 200));
+  query.set("offset", String(params?.offset ?? 0));
+  return request<ApiPaginatedTasks>(`/tasks?${query.toString()}`);
+}
+
+export function createTask(payload: {
+  title: string;
+  category_id: string;
+  notes?: string | null;
+  completed?: boolean;
+  is_habit?: boolean;
+  priority?: "low" | "medium" | "high";
+  due_time?: string | null;
+  subtasks?: Array<{ title: string; completed?: boolean }>;
+}) {
+  return request<ApiTask>("/tasks", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteTask(taskId: string) {
+  return request<void>(`/tasks/${taskId}`, {
+    method: "DELETE",
+  });
+}
+
+export function toggleTask(taskId: string) {
+  return request<ApiTask>(`/tasks/${taskId}/toggle`, {
+    method: "POST",
+  });
+}
+
+export function toggleSubTask(taskId: string, subTaskId: string) {
+  return request<ApiSubTask>(`/tasks/${taskId}/subtasks/${subTaskId}/toggle`, {
+    method: "POST",
+  });
+}
+
+export function getDashboardStats() {
+  return request<ApiDashboardStats>("/stats/dashboard");
 }

@@ -1,4 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createCategory,
+  createTask,
+  deleteCategory,
+  deleteTask,
+  getCategories,
+  getDashboardStats,
+  getTasks,
+  patchCategory,
+  toggleSubTask,
+  toggleTask,
+  type ApiCategory,
+  type ApiTask,
+} from "@/lib/api";
 
 export interface SubTask {
   id: string;
@@ -12,7 +27,7 @@ export interface Task {
   categoryId: string;
   completed: boolean;
   isHabit: boolean;
-  priority: "low" | "medium" | "high";
+  priority?: "low" | "medium" | "high";
   subTasks: SubTask[];
   dueTime?: string;
   createdAt: string;
@@ -40,96 +55,205 @@ export interface AppState {
   totalMomentum: number;
 }
 
-const STORAGE_KEY = "momentum-builder-state";
-
-function loadState(): AppState {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
-  } catch {}
+function mapCategory(category: ApiCategory): Category {
   return {
-    tasks: [],
-    categories: [],
-    history: [],
-    streak: 0,
-    totalMomentum: 0,
+    id: category.id,
+    name: category.name,
+    color: category.color,
+    icon: category.icon,
   };
 }
 
-function saveState(state: AppState) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+function mapTask(task: ApiTask): Task {
+  return {
+    id: task.id,
+    title: task.title,
+    categoryId: task.category_id,
+    completed: task.completed,
+    isHabit: task.is_habit,
+    priority: task.priority ?? undefined,
+    subTasks: task.subtasks.map((sub) => ({
+      id: sub.id,
+      title: sub.title,
+      completed: sub.completed,
+    })),
+    dueTime: task.due_time ?? undefined,
+    createdAt: task.created_at,
+    completedAt: task.completed_at ?? undefined,
+  };
+}
+
+function deriveHistory(tasks: Task[]): DayHistory[] {
+  const byDate = new Map<string, DayHistory>();
+  for (const task of tasks) {
+    const date = task.createdAt.slice(0, 10);
+    const existing = byDate.get(date);
+    if (existing) {
+      existing.total += 1;
+      if (task.completed) existing.completed += 1;
+      continue;
+    }
+    byDate.set(date, {
+      date,
+      total: 1,
+      completed: task.completed ? 1 : 0,
+    });
+  }
+  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function deriveStreak(history: DayHistory[]): number {
+  if (history.length === 0) return 0;
+  const completedDays = new Set(history.filter((d) => d.completed > 0).map((d) => d.date));
+  let streak = 0;
+  const cursor = new Date();
+  while (true) {
+    const key = cursor.toISOString().slice(0, 10);
+    if (!completedDays.has(key)) break;
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
 }
 
 export function useAppState() {
-  const [state, setState] = useState<AppState>(loadState);
+  const queryClient = useQueryClient();
 
-  useEffect(() => { saveState(state); }, [state]);
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
 
-  const toggleTask = useCallback((taskId: string) => {
-    setState((s) => ({
-      ...s,
-      tasks: s.tasks.map((t) =>
-        t.id === taskId
-          ? { ...t, completed: !t.completed, completedAt: !t.completed ? new Date().toISOString() : undefined }
-          : t
-      ),
-      totalMomentum: s.totalMomentum + (s.tasks.find(t => t.id === taskId)?.completed ? -5 : 5),
-    }));
-  }, []);
+  const tasksQuery = useQuery({
+    queryKey: ["tasks"],
+    queryFn: () => getTasks({ limit: 200, offset: 0 }),
+  });
 
-  const toggleSubTask = useCallback((taskId: string, subId: string) => {
-    setState((s) => ({
-      ...s,
-      tasks: s.tasks.map((t) =>
-        t.id === taskId
-          ? { ...t, subTasks: t.subTasks.map((st) => st.id === subId ? { ...st, completed: !st.completed } : st) }
-          : t
-      ),
-    }));
-  }, []);
+  const statsQuery = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: getDashboardStats,
+  });
 
-  const addTask = useCallback((task: Omit<Task, "id" | "createdAt">) => {
-    setState((s) => ({
-      ...s,
-      tasks: [...s.tasks, { ...task, id: crypto.randomUUID(), createdAt: new Date().toISOString() }],
-    }));
-  }, []);
+  const invalidateData = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["categories"] });
+    void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    void queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+  }, [queryClient]);
 
-  const deleteTask = useCallback((taskId: string) => {
-    setState((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== taskId) }));
-  }, []);
+  const createCategoryMutation = useMutation({
+    mutationFn: createCategory,
+    onSuccess: invalidateData,
+  });
 
-  const addCategory = useCallback((cat: Omit<Category, "id">) => {
-    setState((s) => ({
-      ...s,
-      categories: [...s.categories, { ...cat, id: crypto.randomUUID() }],
-    }));
-  }, []);
+  const updateCategoryMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { name?: string; color?: string; icon?: string } }) =>
+      patchCategory(id, payload),
+    onSuccess: invalidateData,
+  });
 
-  const deleteCategory = useCallback((catId: string) => {
-    setState((s) => ({
-      ...s,
-      categories: s.categories.filter((c) => c.id !== catId),
-      tasks: s.tasks.filter((t) => t.categoryId !== catId),
-    }));
-  }, []);
+  const deleteCategoryMutation = useMutation({
+    mutationFn: deleteCategory,
+    onSuccess: invalidateData,
+  });
 
-  const updateCategory = useCallback((catId: string, updates: Partial<Category>) => {
-    setState((s) => ({
-      ...s,
-      categories: s.categories.map((c) => (c.id === catId ? { ...c, ...updates } : c)),
-    }));
-  }, []);
+  const createTaskMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: invalidateData,
+  });
 
-  const completedToday = state.tasks.filter((t) => t.completed).length;
-  const totalToday = state.tasks.length;
+  const toggleTaskMutation = useMutation({
+    mutationFn: toggleTask,
+    onSuccess: invalidateData,
+  });
+
+  const toggleSubTaskMutation = useMutation({
+    mutationFn: ({ taskId, subTaskId }: { taskId: string; subTaskId: string }) => toggleSubTask(taskId, subTaskId),
+    onSuccess: invalidateData,
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: deleteTask,
+    onSuccess: invalidateData,
+  });
+
+  const categories = useMemo(
+    () => (categoriesQuery.data ?? []).map(mapCategory),
+    [categoriesQuery.data],
+  );
+
+  const tasks = useMemo(
+    () => (tasksQuery.data?.items ?? []).map(mapTask),
+    [tasksQuery.data?.items],
+  );
+
+  const history = useMemo(() => deriveHistory(tasks), [tasks]);
+  const streak = useMemo(() => deriveStreak(history), [history]);
+
+  const completedToday = tasks.filter((task) => task.completed).length;
+  const totalToday = tasks.length;
   const progressPercent = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
 
+  const totalMomentum = useMemo(() => {
+    if (statsQuery.data) return statsQuery.data.completed_tasks * 5;
+    return tasks.filter((task) => task.completed).length * 5;
+  }, [statsQuery.data, tasks]);
+
+  const addCategory = useCallback((cat: Omit<Category, "id">) => {
+    createCategoryMutation.mutate({ name: cat.name, color: cat.color, icon: cat.icon });
+  }, [createCategoryMutation]);
+
+  const updateCategory = useCallback((catId: string, updates: Partial<Category>) => {
+    const payload: { name?: string; color?: string; icon?: string } = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.color !== undefined) payload.color = updates.color;
+    if (updates.icon !== undefined) payload.icon = updates.icon;
+    updateCategoryMutation.mutate({ id: catId, payload });
+  }, [updateCategoryMutation]);
+
+  const removeCategory = useCallback((catId: string) => {
+    deleteCategoryMutation.mutate(catId);
+  }, [deleteCategoryMutation]);
+
+  const addTask = useCallback((task: Omit<Task, "id" | "createdAt">) => {
+    createTaskMutation.mutate({
+      title: task.title,
+      category_id: task.categoryId,
+      completed: task.completed,
+      is_habit: task.isHabit,
+      priority: task.priority,
+      due_time: task.dueTime ?? null,
+      subtasks: task.subTasks.map((sub) => ({ title: sub.title, completed: sub.completed })),
+    });
+  }, [createTaskMutation]);
+
+  const removeTask = useCallback((taskId: string) => {
+    deleteTaskMutation.mutate(taskId);
+  }, [deleteTaskMutation]);
+
+  const toggleTaskCompletion = useCallback((taskId: string) => {
+    toggleTaskMutation.mutate(taskId);
+  }, [toggleTaskMutation]);
+
+  const toggleSubTaskCompletion = useCallback((taskId: string, subId: string) => {
+    toggleSubTaskMutation.mutate({ taskId, subTaskId: subId });
+  }, [toggleSubTaskMutation]);
+
   return {
-    ...state,
-    toggleTask, toggleSubTask, addTask, deleteTask,
-    addCategory, deleteCategory, updateCategory,
-    completedToday, totalToday, progressPercent,
+    tasks,
+    categories,
+    history,
+    streak,
+    totalMomentum,
+    toggleTask: toggleTaskCompletion,
+    toggleSubTask: toggleSubTaskCompletion,
+    addTask,
+    deleteTask: removeTask,
+    addCategory,
+    deleteCategory: removeCategory,
+    updateCategory,
+    completedToday,
+    totalToday,
+    progressPercent,
   };
 }
 
