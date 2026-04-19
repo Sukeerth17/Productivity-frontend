@@ -1,30 +1,30 @@
 import { Flame, Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import AppHeader from "@/components/AppHeader";
-import { useAppState, getCategoryColorHex } from "@/lib/store";
-import { useAuth } from "@/lib/auth";
-import { getCategoryCompletion } from "@/lib/api";
+import { getCategoryColorHex } from "@/lib/store";
+import { getCategoryCompletion, getHistorySummary } from "@/lib/api";
 
 export default function HistoryVault() {
-  const store = useAppState({ categories: false, tasks: true, dashboardStats: true });
-  const { user } = useAuth();
-
-  const startDate = user?.created_at ? new Date(user.created_at) : null;
-  const tasksSinceStart = startDate
-    ? store.tasks.filter((task) => new Date(task.createdAt) >= startDate)
-    : store.tasks;
-  const totalSinceStart = tasksSinceStart.length;
-  const completedSinceStart = tasksSinceStart.filter((task) => task.completed).length;
-  const completionSinceStart = totalSinceStart > 0 ? completedSinceStart / totalSinceStart : 0;
-
-  const circleRadius = 62;
-  const circleCircumference = 2 * Math.PI * circleRadius;
-  const doneStroke = circleCircumference * completionSinceStart;
+  const historySummaryQuery = useQuery({
+    queryKey: ["history-summary"],
+    queryFn: getHistorySummary,
+  });
 
   const categoryCompletionQuery = useQuery({
     queryKey: ["category-completion", 30],
     queryFn: () => getCategoryCompletion(30),
   });
+
+  const summary = historySummaryQuery.data;
+  const totalSinceStart = summary?.since_start_total_tasks ?? 0;
+  const completedSinceStart = summary?.since_start_completed_tasks ?? 0;
+  const completionSinceStart = totalSinceStart > 0 ? completedSinceStart / totalSinceStart : 0;
+  const startDate = summary?.started_at ? new Date(summary.started_at) : null;
+
+  const circleRadius = 62;
+  const circleCircumference = 2 * Math.PI * circleRadius;
+  const doneStroke = circleCircumference * completionSinceStart;
+
   const catStats = (categoryCompletionQuery.data ?? []).map((cat) => ({
     ...cat,
     pct: Math.round(cat.completion_rate),
@@ -38,12 +38,11 @@ export default function HistoryVault() {
         <h1 className="text-2xl sm:text-3xl font-heading font-extrabold mb-1">History Vault</h1>
         <p className="text-muted text-sm mb-8">Your legacy of consistency.</p>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
           <div className="card-game p-6 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted">Total Momentum</p>
-              <p className="text-4xl font-heading font-extrabold">{store.totalMomentum.toLocaleString()}</p>
+              <p className="text-4xl font-heading font-extrabold">{(summary?.total_momentum ?? 0).toLocaleString()}</p>
             </div>
             <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center">
               <Zap size={28} className="text-accent" />
@@ -52,7 +51,7 @@ export default function HistoryVault() {
           <div className="card-game p-6 flex items-center justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted">Current Streak</p>
-              <p className="text-4xl font-heading font-extrabold text-primary">{store.streak} Days</p>
+              <p className="text-4xl font-heading font-extrabold text-primary">{summary?.current_streak ?? 0} Days</p>
             </div>
             <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center border-game">
               <Flame size={28} className="text-primary" />
@@ -107,14 +106,13 @@ export default function HistoryVault() {
                   <span className="font-bold">Not Done: {Math.max(totalSinceStart - completedSinceStart, 0)}</span>
                 </div>
                 <div className="font-bold text-muted">
-                  Completion: {Math.round(completionSinceStart * 100)}%
+                  Completion: {Math.round(summary?.completion_rate ?? 0)}%
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bar chart */}
         <div className="card-game p-4 sm:p-6">
           <h2 className="text-lg font-heading font-extrabold mb-1">30-Day Completion by Category</h2>
           <p className="text-xs text-muted mb-6">Powered by backend stats API</p>

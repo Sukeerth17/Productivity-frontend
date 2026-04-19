@@ -1,12 +1,13 @@
 import { createContext, useContext, useMemo, useState } from "react";
-import { logIn, signUp, type AuthUser } from "@/lib/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { logIn, signUp, updateProfile, type AuthUser } from "@/lib/api";
 
 type AuthContextValue = {
   token: string | null;
   user: AuthUser | null;
   login: (payload: { email: string; password: string }) => Promise<void>;
   signup: (payload: { name: string; email: string; password: string }) => Promise<void>;
-  updateName: (name: string) => void;
+  updateName: (name: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 };
@@ -51,10 +52,12 @@ function loadUser(): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [token, setToken] = useState<string | null>(() => safeGetItem(TOKEN_KEY));
   const [user, setUser] = useState<AuthUser | null>(loadUser);
 
   const persist = (nextToken: string, nextUser: AuthUser) => {
+    queryClient.clear();
     safeSetItem(TOKEN_KEY, nextToken);
     safeSetItem(USER_KEY, JSON.stringify(nextUser));
     setToken(nextToken);
@@ -71,16 +74,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persist(res.token, res.user);
   };
 
-  const updateName = (name: string) => {
+  const updateName = async (name: string) => {
     if (!user) return;
     const trimmed = name.trim();
     if (!trimmed) return;
-    const nextUser = { ...user, name: trimmed };
+    const nextUser = await updateProfile({ name: trimmed });
     safeSetItem(USER_KEY, JSON.stringify(nextUser));
     setUser(nextUser);
   };
 
   const logout = () => {
+    queryClient.clear();
     safeRemoveItem(TOKEN_KEY);
     safeRemoveItem(USER_KEY);
     setToken(null);

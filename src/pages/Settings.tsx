@@ -9,13 +9,23 @@ export default function Settings() {
   const { user, logout, updateName } = useAuth();
   const [name, setName] = useState(user?.name ?? "");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSaveName = () => {
+  const handleSaveName = async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    updateName(trimmed);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1800);
+    setSaving(true);
+    setError(null);
+    try {
+      await updateName(trimmed);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1800);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update name right now.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -48,12 +58,14 @@ export default function Settings() {
                 />
                 <button
                   onClick={handleSaveName}
-                  className="shrink-0 px-4 py-2 rounded-inner border-game bg-primary text-primary-foreground font-heading font-bold btn-press"
+                  disabled={saving}
+                  className="shrink-0 px-4 py-2 rounded-inner border-game bg-primary text-primary-foreground font-heading font-bold btn-press disabled:opacity-70"
                 >
-                  Save
+                  {saving ? "Saving..." : "Save"}
                 </button>
               </div>
               {saved ? <p className="text-xs font-bold text-accent mt-2">Name updated.</p> : null}
+              {error ? <p className="text-xs font-bold text-primary mt-2">{error}</p> : null}
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted">Email</p>

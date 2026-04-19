@@ -41,27 +41,13 @@ export interface Category {
   icon: string;
 }
 
-export interface DayHistory {
-  date: string;
-  completed: number;
-  total: number;
-}
-
-export interface AppState {
-  tasks: Task[];
-  categories: Category[];
-  history: DayHistory[];
-  streak: number;
-  totalMomentum: number;
-}
-
 type UseAppStateOptions = {
   categories?: boolean;
   tasks?: boolean;
   dashboardStats?: boolean;
 };
 
-function mapCategory(category: ApiCategory): Category {
+export function mapCategory(category: ApiCategory): Category {
   return {
     id: category.id,
     name: category.name,
@@ -70,7 +56,7 @@ function mapCategory(category: ApiCategory): Category {
   };
 }
 
-function mapTask(task: ApiTask): Task {
+export function mapTask(task: ApiTask): Task {
   return {
     id: task.id,
     title: task.title,
@@ -89,39 +75,6 @@ function mapTask(task: ApiTask): Task {
   };
 }
 
-function deriveHistory(tasks: Task[]): DayHistory[] {
-  const byDate = new Map<string, DayHistory>();
-  for (const task of tasks) {
-    const date = task.createdAt.slice(0, 10);
-    const existing = byDate.get(date);
-    if (existing) {
-      existing.total += 1;
-      if (task.completed) existing.completed += 1;
-      continue;
-    }
-    byDate.set(date, {
-      date,
-      total: 1,
-      completed: task.completed ? 1 : 0,
-    });
-  }
-  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
-}
-
-function deriveStreak(history: DayHistory[]): number {
-  if (history.length === 0) return 0;
-  const completedDays = new Set(history.filter((d) => d.completed > 0).map((d) => d.date));
-  let streak = 0;
-  const cursor = new Date();
-  while (true) {
-    const key = cursor.toISOString().slice(0, 10);
-    if (!completedDays.has(key)) break;
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
-
 export function useAppState(options?: UseAppStateOptions) {
   const withDefaults: Required<UseAppStateOptions> = {
     categories: options?.categories ?? true,
@@ -137,7 +90,7 @@ export function useAppState(options?: UseAppStateOptions) {
   });
 
   const tasksQuery = useQuery({
-    queryKey: ["tasks"],
+    queryKey: ["tasks", { scope: "all" }],
     queryFn: () => getTasks({ limit: 200, offset: 0 }),
     enabled: withDefaults.tasks,
   });
@@ -148,63 +101,81 @@ export function useAppState(options?: UseAppStateOptions) {
     enabled: withDefaults.dashboardStats,
   });
 
-  const invalidateData = useCallback(() => {
+  const invalidateCategories = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["categories"] });
+  }, [queryClient]);
+
+  const invalidateTasks = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+  }, [queryClient]);
+
+  const invalidateDashboardStats = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
   }, [queryClient]);
 
+  const invalidateHistory = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["history-summary"] });
+    void queryClient.invalidateQueries({ queryKey: ["category-completion"] });
+  }, [queryClient]);
+
+  const invalidateTaskDrivenData = useCallback(() => {
+    invalidateTasks();
+    invalidateDashboardStats();
+    invalidateHistory();
+  }, [invalidateDashboardStats, invalidateHistory, invalidateTasks]);
+
   const createCategoryMutation = useMutation({
     mutationFn: createCategory,
-    onSuccess: invalidateData,
+    onSuccess: () => {
+      invalidateCategories();
+      invalidateDashboardStats();
+      invalidateHistory();
+    },
   });
 
   const updateCategoryMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: { name?: string; color?: string; icon?: string } }) =>
       patchCategory(id, payload),
-    onSuccess: invalidateData,
+    onSuccess: () => {
+      invalidateCategories();
+      invalidateHistory();
+    },
   });
 
   const deleteCategoryMutation = useMutation({
     mutationFn: deleteCategory,
-    onSuccess: invalidateData,
+    onSuccess: () => {
+      invalidateCategories();
+      invalidateTaskDrivenData();
+    },
   });
 
   const createTaskMutation = useMutation({
     mutationFn: createTask,
-    onSuccess: invalidateData,
+    onSuccess: invalidateTaskDrivenData,
   });
 
   const toggleTaskMutation = useMutation({
     mutationFn: toggleTask,
-    onSuccess: invalidateData,
+    onSuccess: invalidateTaskDrivenData,
   });
 
   const toggleSubTaskMutation = useMutation({
     mutationFn: ({ taskId, subTaskId }: { taskId: string; subTaskId: string }) => toggleSubTask(taskId, subTaskId),
-    onSuccess: invalidateData,
+    onSuccess: invalidateTaskDrivenData,
   });
 
   const deleteTaskMutation = useMutation({
     mutationFn: deleteTask,
-    onSuccess: invalidateData,
+    onSuccess: invalidateTaskDrivenData,
   });
 
   const categories = useMemo(() => (categoriesQuery.data ?? []).map(mapCategory), [categoriesQuery.data]);
-
   const tasks = useMemo(() => (tasksQuery.data?.items ?? []).map(mapTask), [tasksQuery.data?.items]);
-
-  const history = useMemo(() => deriveHistory(tasks), [tasks]);
-  const streak = useMemo(() => deriveStreak(history), [history]);
 
   const completedToday = tasks.filter((task) => task.completed).length;
   const totalToday = tasks.length;
   const progressPercent = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
-
-  const totalMomentum = useMemo(() => {
-    if (statsQuery.data) return statsQuery.data.completed_tasks * 5;
-    return tasks.filter((task) => task.completed).length * 5;
-  }, [statsQuery.data, tasks]);
 
   const addCategory = useCallback((cat: Omit<Category, "id">) => {
     createCategoryMutation.mutate({ name: cat.name, color: cat.color, icon: cat.icon });
@@ -246,11 +217,14 @@ export function useAppState(options?: UseAppStateOptions) {
     toggleSubTaskMutation.mutate({ taskId, subTaskId: subId });
   }, [toggleSubTaskMutation]);
 
+  const totalMomentum = useMemo(() => {
+    if (statsQuery.data) return statsQuery.data.completed_tasks * 5;
+    return tasks.filter((task) => task.completed).length * 5;
+  }, [statsQuery.data, tasks]);
+
   return {
     tasks,
     categories,
-    history,
-    streak,
     totalMomentum,
     toggleTask: toggleTaskCompletion,
     toggleSubTask: toggleSubTaskCompletion,

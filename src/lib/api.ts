@@ -56,6 +56,15 @@ export interface ApiDashboardStats {
   completion_rate: number;
 }
 
+export interface ApiHistorySummary {
+  started_at: string;
+  since_start_total_tasks: number;
+  since_start_completed_tasks: number;
+  completion_rate: number;
+  current_streak: number;
+  total_momentum: number;
+}
+
 export interface ApiCategoryCompletionStats {
   category_id: string;
   category_name: string;
@@ -67,6 +76,7 @@ export interface ApiCategoryCompletionStats {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 const REQUEST_TIMEOUT_MS = 20_000;
+const TOKEN_KEY = "productvity-auth-token";
 
 function buildErrorMessage(error: unknown): string {
   if (error instanceof DOMException && error.name === "AbortError") {
@@ -96,17 +106,31 @@ function getApiRoot(): string {
   }
 }
 
+function getStoredToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const { signal, cleanup } = withTimeoutSignal(REQUEST_TIMEOUT_MS);
   let response: Response;
 
+  const token = getStoredToken();
+  const headers = new Headers(options?.headers ?? {});
+  if (!headers.has("Content-Type") && options?.body) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
   try {
     response = await fetch(`${API_BASE}${path}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(options?.headers ?? {}),
-      },
       ...options,
+      headers,
       signal,
     });
   } catch (error) {
@@ -154,6 +178,17 @@ export function signUp(payload: { name: string; email: string; password: string 
 export function logIn(payload: { email: string; password: string }) {
   return request<AuthResponse>("/auth/login", {
     method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getCurrentUser() {
+  return request<AuthUser>("/auth/me");
+}
+
+export function updateProfile(payload: { name: string }) {
+  return request<AuthUser>("/auth/me", {
+    method: "PATCH",
     body: JSON.stringify(payload),
   });
 }
@@ -227,6 +262,10 @@ export function toggleSubTask(taskId: string, subTaskId: string) {
 
 export function getDashboardStats() {
   return request<ApiDashboardStats>("/stats/dashboard");
+}
+
+export function getHistorySummary() {
+  return request<ApiHistorySummary>("/stats/history-summary");
 }
 
 export function getCategoryCompletion(days = 30) {
