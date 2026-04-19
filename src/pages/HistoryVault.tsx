@@ -1,36 +1,23 @@
 import { Flame, Zap } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { useAppState, getCategoryColorHex } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 
 export default function HistoryVault() {
   const store = useAppState();
+  const { user } = useAuth();
 
-  // Build contribution grid (last 6 months, weeks as columns)
-  const last180 = store.history.slice(-180);
-  const maxCompleted = Math.max(...last180.map(d => d.completed), 1);
+  const startDate = user?.created_at ? new Date(user.created_at) : null;
+  const tasksSinceStart = startDate
+    ? store.tasks.filter((task) => new Date(task.createdAt) >= startDate)
+    : store.tasks;
+  const totalSinceStart = tasksSinceStart.length;
+  const completedSinceStart = tasksSinceStart.filter((task) => task.completed).length;
+  const completionSinceStart = totalSinceStart > 0 ? completedSinceStart / totalSinceStart : 0;
 
-  // Group by week (7 rows: Mon-Sun)
-  const weeks: (typeof last180[number] | null)[][] = [];
-  let currentWeek: (typeof last180[number] | null)[] = [];
-  const firstDay = new Date(last180[0]?.date || Date.now());
-  const startPad = (firstDay.getDay() + 6) % 7; // Monday=0
-  for (let i = 0; i < startPad; i++) currentWeek.push(null);
-  for (const day of last180) {
-    currentWeek.push(day);
-    if (currentWeek.length === 7) { weeks.push(currentWeek); currentWeek = []; }
-  }
-  if (currentWeek.length) { while (currentWeek.length < 7) currentWeek.push(null); weeks.push(currentWeek); }
-
-  // Month labels
-  const monthLabels: { label: string; col: number }[] = [];
-  let lastMonth = -1;
-  weeks.forEach((week, i) => {
-    const day = week.find(d => d);
-    if (day) {
-      const m = new Date(day.date).getMonth();
-      if (m !== lastMonth) { monthLabels.push({ label: new Date(day.date).toLocaleString("en", { month: "short" }), col: i }); lastMonth = m; }
-    }
-  });
+  const circleRadius = 62;
+  const circleCircumference = 2 * Math.PI * circleRadius;
+  const doneStroke = circleCircumference * completionSinceStart;
 
   // Category completion bars
   const catStats = store.categories.map(cat => {
@@ -39,8 +26,6 @@ export default function HistoryVault() {
     const pct = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
     return { ...cat, pct, colorHex: getCategoryColorHex(cat.color) };
   });
-
-  const dayLabels = ["Mon", "", "Wed", "", "Fri", "", ""];
 
   return (
     <div className="min-h-screen bg-background">
@@ -71,54 +56,62 @@ export default function HistoryVault() {
           </div>
         </div>
 
-        {/* Contribution Grid */}
-        <div className="card-game p-4 sm:p-6 mb-8 overflow-x-auto">
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
-            <h2 className="text-lg font-heading font-extrabold">Last 6 Months Activity</h2>
-            <div className="flex items-center gap-1 text-xs text-muted">
-              Less
-              {[0.2, 0.4, 0.6, 0.8, 1].map((o) => (
-                <div key={o} className="w-3 h-3 rounded-sm" style={{ backgroundColor: `hsl(var(--primary) / ${o})` }} />
-              ))}
-              More
-            </div>
-          </div>
-
-          {/* Month headers */}
-          <div className="flex ml-10 mb-1">
-            {monthLabels.map((m) => (
-              <div key={m.col} className="text-xs text-muted font-body absolute" style={{ left: m.col * 18 }}>
-                {m.label}
+        <div className="card-game p-5 sm:p-6 mb-8">
+          <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-10">
+            <div className="relative w-44 h-44 shrink-0">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 150 150" aria-label="Lifetime completion ring">
+                <circle
+                  cx="75"
+                  cy="75"
+                  r={circleRadius}
+                  fill="none"
+                  stroke="#FF6B6B"
+                  strokeWidth="12"
+                  strokeLinecap="round"
+                />
+                <circle
+                  cx="75"
+                  cy="75"
+                  r={circleRadius}
+                  fill="none"
+                  stroke="#26DE81"
+                  strokeWidth="12"
+                  strokeLinecap="round"
+                  strokeDasharray={`${doneStroke} ${circleCircumference}`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                <p className="text-3xl font-heading font-extrabold">{completedSinceStart}/{totalSinceStart}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted">Tasks Completed</p>
               </div>
-            ))}
-          </div>
-          <div className="flex gap-0 mt-6">
-            <div className="flex flex-col gap-[3px] mr-2 text-xs text-muted font-body pt-0">
-              {dayLabels.map((l, i) => <div key={i} className="h-[16px] flex items-center">{l}</div>)}
             </div>
-            <div className="flex gap-[3px]">
-              {weeks.map((week, wi) => (
-                <div key={wi} className="flex flex-col gap-[3px]">
-                  {week.map((day, di) => {
-                    if (!day) return <div key={di} className="w-4 h-4" />;
-                    const opacity = Math.max(0.1, day.completed / maxCompleted);
-                    return (
-                      <div
-                        key={di}
-                        className="w-4 h-4 rounded-sm cursor-pointer hover:ring-2 hover:ring-foreground transition-all"
-                        style={{ backgroundColor: `hsl(var(--primary) / ${opacity})` }}
-                        title={`${day.date}: ${day.completed} tasks`}
-                      />
-                    );
-                  })}
+
+            <div className="w-full">
+              <h2 className="text-lg font-heading font-extrabold mb-1">Since You Started</h2>
+              <p className="text-sm text-muted mb-4">
+                {startDate
+                  ? `Tracking from ${startDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                  : "Tracking from your first day"}
+              </p>
+              <div className="flex flex-wrap gap-5 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#26DE81]" />
+                  <span className="font-bold">Done: {completedSinceStart}</span>
                 </div>
-              ))}
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#FF6B6B]" />
+                  <span className="font-bold">Not Done: {Math.max(totalSinceStart - completedSinceStart, 0)}</span>
+                </div>
+                <div className="font-bold text-muted">
+                  Completion: {Math.round(completionSinceStart * 100)}%
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Bar chart */}
-          <div className="card-game p-4 sm:p-6">
+        <div className="card-game p-4 sm:p-6">
           <h2 className="text-lg font-heading font-extrabold mb-6">30-Day Completion by Category</h2>
           <div className="flex items-end gap-4 sm:gap-8 justify-start sm:justify-center h-48 overflow-x-auto pb-1">
             {catStats.map((cat) => (
