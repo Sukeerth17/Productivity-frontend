@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import CategoryDetail from "./pages/CategoryDetail";
 import HistoryVault from "./pages/HistoryVault";
 import CategoryManager from "./pages/CategoryManager";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -68,7 +69,7 @@ const App = () => (
             <Route path="/category/:slugOrId" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><HistoryVault /></ProtectedRoute>} />
             <Route path="/categories" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
