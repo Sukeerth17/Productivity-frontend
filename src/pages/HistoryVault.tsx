@@ -1,7 +1,9 @@
 import { Flame, Zap } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import AppHeader from "@/components/AppHeader";
 import { useAppState, getCategoryColorHex } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
+import { getCategoryCompletion } from "@/lib/api";
 
 export default function HistoryVault() {
   const store = useAppState();
@@ -19,13 +21,15 @@ export default function HistoryVault() {
   const circleCircumference = 2 * Math.PI * circleRadius;
   const doneStroke = circleCircumference * completionSinceStart;
 
-  // Category completion bars
-  const catStats = store.categories.map(cat => {
-    const tasks = store.tasks.filter(t => t.categoryId === cat.id);
-    const completed = tasks.filter(t => t.completed).length;
-    const pct = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
-    return { ...cat, pct, colorHex: getCategoryColorHex(cat.color) };
+  const categoryCompletionQuery = useQuery({
+    queryKey: ["category-completion", 30],
+    queryFn: () => getCategoryCompletion(30),
   });
+  const catStats = (categoryCompletionQuery.data ?? []).map((cat) => ({
+    ...cat,
+    pct: Math.round(cat.completion_rate),
+    colorHex: getCategoryColorHex(cat.color),
+  }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -112,19 +116,21 @@ export default function HistoryVault() {
 
         {/* Bar chart */}
         <div className="card-game p-4 sm:p-6">
-          <h2 className="text-lg font-heading font-extrabold mb-6">30-Day Completion by Category</h2>
-          <div className="flex items-end gap-4 sm:gap-8 justify-start sm:justify-center h-48 overflow-x-auto pb-1">
+          <h2 className="text-lg font-heading font-extrabold mb-1">30-Day Completion by Category</h2>
+          <p className="text-xs text-muted mb-6">Powered by backend stats API</p>
+          <div className="flex items-end gap-4 sm:gap-8 justify-start sm:justify-center h-56 overflow-x-auto pb-1">
             {catStats.map((cat) => (
-              <div key={cat.id} className="flex flex-col items-center gap-2 min-w-[70px]">
+              <div key={cat.category_id} className="flex flex-col items-center gap-2 min-w-[88px]">
                 <div className="relative w-16" style={{ height: `${Math.max(cat.pct * 1.6, 10)}px` }}>
-                  <div
-                    className="absolute bottom-0 w-full rounded-t-inner"
-                    style={{ height: "100%", backgroundColor: cat.colorHex }}
-                  />
+                  <div className="absolute bottom-0 w-full rounded-t-inner" style={{ height: "100%", backgroundColor: cat.colorHex }} />
                 </div>
-                <span className="text-xs font-heading font-bold">{cat.name}</span>
+                <span className="text-xs font-heading font-bold text-center">{cat.category_name}</span>
+                <span className="text-[10px] text-muted font-bold">{cat.completed_tasks}/{cat.total_tasks}</span>
               </div>
             ))}
+            {!categoryCompletionQuery.isLoading && catStats.length === 0 ? (
+              <div className="text-sm text-muted font-bold">No category data in the last 30 days.</div>
+            ) : null}
           </div>
           <div className="flex justify-between text-xs text-muted mt-2 px-4">
             <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>

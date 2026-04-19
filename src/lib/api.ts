@@ -56,6 +56,15 @@ export interface ApiDashboardStats {
   completion_rate: number;
 }
 
+export interface ApiCategoryCompletionStats {
+  category_id: string;
+  category_name: string;
+  color: string;
+  total_tasks: number;
+  completed_tasks: number;
+  completion_rate: number;
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 const REQUEST_TIMEOUT_MS = 20_000;
 
@@ -218,4 +227,8 @@ export function toggleSubTask(taskId: string, subTaskId: string) {
 
 export function getDashboardStats() {
   return request<ApiDashboardStats>("/stats/dashboard");
+}
+
+export function getCategoryCompletion(days = 30) {
+  return request<ApiCategoryCompletionStats[]>(`/stats/category-completion?days=${days}`);
 }
