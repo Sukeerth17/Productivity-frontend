@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { getCategoryCompletion } from "@/lib/api";
 
 export default function HistoryVault() {
-  const store = useAppState();
+  const store = useAppState({ categories: false, tasks: true, dashboardStats: true });
   const { user } = useAuth();
 
   const startDate = user?.created_at ? new Date(user.created_at) : null;

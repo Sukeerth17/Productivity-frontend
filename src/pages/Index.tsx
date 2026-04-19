@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { categoryPath } from "@/lib/utils";
 
 export default function Index() {
-  const store = useAppState();
+  const store = useAppState({ categories: true, tasks: true, dashboardStats: true });
   const { user } = useAuth();
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);

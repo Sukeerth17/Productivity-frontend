@@ -11,7 +11,7 @@ import { categoryPath, slugify } from "@/lib/utils";
 export default function CategoryDetail() {
   const { slugOrId } = useParams<{ slugOrId: string }>();
   const navigate = useNavigate();
-  const store = useAppState();
+  const store = useAppState({ categories: true, tasks: true, dashboardStats: false });
   const [modalOpen, setModalOpen] = useState(false);
 
   const category = store.categories.find((c) => c.id === slugOrId)

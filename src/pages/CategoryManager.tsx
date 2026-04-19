@@ -6,7 +6,7 @@ import AppHeader from "@/components/AppHeader";
 import { useAppState, CATEGORY_COLORS, getCategoryColorHex } from "@/lib/store";
 
 export default function CategoryManager() {
-  const store = useAppState();
+  const store = useAppState({ categories: true, tasks: false, dashboardStats: false });
   const navigate = useNavigate();
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState(CATEGORY_COLORS[0]);

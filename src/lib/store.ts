@@ -55,6 +55,12 @@ export interface AppState {
   totalMomentum: number;
 }
 
+type UseAppStateOptions = {
+  categories?: boolean;
+  tasks?: boolean;
+  dashboardStats?: boolean;
+};
+
 function mapCategory(category: ApiCategory): Category {
   return {
     id: category.id,
@@ -116,22 +122,30 @@ function deriveStreak(history: DayHistory[]): number {
   return streak;
 }
 
-export function useAppState() {
+export function useAppState(options?: UseAppStateOptions) {
+  const withDefaults: Required<UseAppStateOptions> = {
+    categories: options?.categories ?? true,
+    tasks: options?.tasks ?? true,
+    dashboardStats: options?.dashboardStats ?? true,
+  };
   const queryClient = useQueryClient();
 
   const categoriesQuery = useQuery({
     queryKey: ["categories"],
     queryFn: getCategories,
+    enabled: withDefaults.categories,
   });
 
   const tasksQuery = useQuery({
     queryKey: ["tasks"],
     queryFn: () => getTasks({ limit: 200, offset: 0 }),
+    enabled: withDefaults.tasks,
   });
 
   const statsQuery = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: getDashboardStats,
+    enabled: withDefaults.dashboardStats,
   });
 
   const invalidateData = useCallback(() => {
@@ -176,15 +190,9 @@ export function useAppState() {
     onSuccess: invalidateData,
   });
 
-  const categories = useMemo(
-    () => (categoriesQuery.data ?? []).map(mapCategory),
-    [categoriesQuery.data],
-  );
+  const categories = useMemo(() => (categoriesQuery.data ?? []).map(mapCategory), [categoriesQuery.data]);
 
-  const tasks = useMemo(
-    () => (tasksQuery.data?.items ?? []).map(mapTask),
-    [tasksQuery.data?.items],
-  );
+  const tasks = useMemo(() => (tasksQuery.data?.items ?? []).map(mapTask), [tasksQuery.data?.items]);
 
   const history = useMemo(() => deriveHistory(tasks), [tasks]);
   const streak = useMemo(() => deriveStreak(history), [history]);
