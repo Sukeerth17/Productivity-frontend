@@ -1,13 +1,22 @@
+import { useState } from "react";
 import { ArrowLeft, LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import AppHeader from "@/components/AppHeader";
 import { useAuth } from "@/lib/auth";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
-
 export default function Settings() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, updateName } = useAuth();
+  const [name, setName] = useState(user?.name ?? "");
+  const [saved, setSaved] = useState(false);
+
+  const handleSaveName = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    updateName(trimmed);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1800);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -27,23 +36,29 @@ export default function Settings() {
             </div>
             <h2 className="font-heading font-extrabold text-lg">Account</h2>
           </div>
-          <div className="space-y-3 text-sm">
+          <div className="space-y-4 text-sm">
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted">Name</p>
-              <p className="font-heading font-bold text-base">{user?.name ?? "Unknown"}</p>
+              <div className="mt-1 flex flex-col sm:flex-row gap-2 sm:items-center">
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full border-game rounded-inner px-3 py-2 font-body bg-card focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Your name"
+                />
+                <button
+                  onClick={handleSaveName}
+                  className="shrink-0 px-4 py-2 rounded-inner border-game bg-primary text-primary-foreground font-heading font-bold btn-press"
+                >
+                  Save
+                </button>
+              </div>
+              {saved ? <p className="text-xs font-bold text-accent mt-2">Name updated.</p> : null}
             </div>
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted">Email</p>
               <p className="font-heading font-bold text-base break-all">{user?.email ?? "Unknown"}</p>
             </div>
-          </div>
-        </div>
-
-        <div className="card-game p-5 sm:p-6 mb-6">
-          <h2 className="font-heading font-extrabold text-lg mb-4">Application</h2>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-muted">Connected API</p>
-            <p className="font-mono text-xs sm:text-sm break-all">{API_BASE}</p>
           </div>
         </div>
 

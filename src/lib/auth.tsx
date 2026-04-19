@@ -6,6 +6,7 @@ type AuthContextValue = {
   user: AuthUser | null;
   login: (payload: { email: string; password: string }) => Promise<void>;
   signup: (payload: { name: string; email: string; password: string }) => Promise<void>;
+  updateName: (name: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
 };
@@ -70,6 +71,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     persist(res.token, res.user);
   };
 
+  const updateName = (name: string) => {
+    if (!user) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const nextUser = { ...user, name: trimmed };
+    safeSetItem(USER_KEY, JSON.stringify(nextUser));
+    setUser(nextUser);
+  };
+
   const logout = () => {
     safeRemoveItem(TOKEN_KEY);
     safeRemoveItem(USER_KEY);
@@ -78,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = useMemo(
-    () => ({ token, user, login, signup, logout, isAuthenticated: !!token }),
+    () => ({ token, user, login, signup, updateName, logout, isAuthenticated: !!token }),
     [token, user],
   );
 
