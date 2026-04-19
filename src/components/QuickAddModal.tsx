@@ -58,14 +58,21 @@ export default function QuickAddModal({ open, onClose, categories, onAdd }: Quic
             />
 
             <p className="text-xs font-bold uppercase tracking-wider text-muted mb-2">Category</p>
-            <div className="flex gap-2 mb-4 flex-wrap">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
               {categories.map((c) => (
                 <button
                   key={c.id}
-                  className={`w-10 h-10 rounded-full border-game transition-transform ${catId === c.id ? "scale-110 ring-2 ring-foreground" : ""}`}
-                  style={{ backgroundColor: getCategoryColorHex(c.color) }}
+                  className={`w-full rounded-inner border-game px-3 py-2 text-left font-heading font-bold text-sm flex items-center gap-2 transition-colors ${
+                    catId === c.id ? "bg-primary text-primary-foreground" : "bg-card hover:bg-secondary"
+                  }`}
                   onClick={() => setCatId(c.id)}
-                />
+                >
+                  <span
+                    className="w-3 h-3 rounded-full border border-foreground/40 shrink-0"
+                    style={{ backgroundColor: getCategoryColorHex(c.color) }}
+                  />
+                  <span className="truncate">{c.name}</span>
+                </button>
               ))}
             </div>
 
