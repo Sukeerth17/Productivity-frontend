@@ -1,22 +1,33 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import TaskCard from "@/components/TaskCard";
 import QuickAddModal from "@/components/QuickAddModal";
 import { useAppState, getCategoryColorHex } from "@/lib/store";
+import { categoryPath, slugify } from "@/lib/utils";
 
 export default function CategoryDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { slugOrId } = useParams<{ slugOrId: string }>();
   const navigate = useNavigate();
   const store = useAppState();
   const [modalOpen, setModalOpen] = useState(false);
 
-  const category = store.categories.find((c) => c.id === id);
+  const category = store.categories.find((c) => c.id === slugOrId)
+    ?? store.categories.find((c) => slugify(c.name) === slugOrId);
+
+  useEffect(() => {
+    if (!category || !slugOrId) return;
+    const canonicalSlug = slugify(category.name);
+    if (canonicalSlug && slugOrId !== canonicalSlug) {
+      navigate(categoryPath(category.name), { replace: true });
+    }
+  }, [category, navigate, slugOrId]);
+
   if (!category) return <div className="p-8 text-center font-heading text-xl">Category not found</div>;
 
-  const tasks = store.tasks.filter((t) => t.categoryId === id);
+  const tasks = store.tasks.filter((t) => t.categoryId === category.id);
   const completed = tasks.filter((t) => t.completed).length;
   const pct = tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0;
   const colorHex = getCategoryColorHex(category.color);

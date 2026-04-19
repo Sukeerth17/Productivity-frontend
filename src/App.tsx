@@ -65,7 +65,7 @@ const App = () => (
               )}
             />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/category/:id" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
+            <Route path="/category/:slugOrId" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
             <Route path="/history" element={<ProtectedRoute><HistoryVault /></ProtectedRoute>} />
             <Route path="/categories" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />

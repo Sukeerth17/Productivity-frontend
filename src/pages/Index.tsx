@@ -9,6 +9,7 @@ import CategoryCard from "@/components/CategoryCard";
 import QuickAddModal from "@/components/QuickAddModal";
 import { useAppState } from "@/lib/store";
 import { useAuth } from "@/lib/auth";
+import { categoryPath } from "@/lib/utils";
 
 export default function Index() {
   const store = useAppState();
@@ -121,7 +122,7 @@ export default function Index() {
                   key={cat.id}
                   category={cat}
                   tasks={store.tasks.filter((t) => t.categoryId === cat.id)}
-                  onClick={() => navigate(`/category/${cat.id}`)}
+                  onClick={() => navigate(categoryPath(cat.name))}
                 />
               ))}
               <button
