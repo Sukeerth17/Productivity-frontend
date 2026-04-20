@@ -21,14 +21,18 @@ export default function ProgressBar({ percent, height = 32 }: ProgressBarProps) 
       {milestones.map((m) => (
         <motion.div
           key={m}
-          className="absolute top-1/2 z-10 flex items-center justify-center -translate-y-1/2 -translate-x-1/2"
-          style={{ left: `${m}%` }}
+          className="absolute z-10 flex items-center justify-center"
+          style={{ 
+            left: `${m}%`,
+            top: '50%',
+            transform: 'translate(-50%, -50%)'
+          }}
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.1 * (milestones.indexOf(m) + 1), duration: 0.4 }}
         >
           <Star
-            size={16}
+            size={20}
             className={percent >= m ? "fill-foreground text-foreground" : "fill-muted/30 text-muted/50"}
           />
         </motion.div>
