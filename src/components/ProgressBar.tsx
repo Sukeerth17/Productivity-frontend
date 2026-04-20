@@ -8,7 +8,7 @@ interface ProgressBarProps {
 
 const milestones = [25, 50, 75, 100];
 
-export default function ProgressBar({ percent, height = 32 }: ProgressBarProps) {
+export default function ProgressBar({ percent, height = 36 }: ProgressBarProps)  {
   return (
     <div className="relative w-full" style={{ height }}>
       <div className="absolute inset-0 border-game rounded-inner bg-card" />
@@ -22,12 +22,12 @@ export default function ProgressBar({ percent, height = 32 }: ProgressBarProps) 
         <motion.div
           key={m}
           className="absolute flex items-center justify-center"
-          style={{ 
-            left: `${m}%`,
+          style={{
+            left: m === 100 ? `calc(${m}% - 12px)` : `${m}%`,
             top: '50%',
             transform: 'translate(-50%, -50%)',
             zIndex: 10
-          }}
+            }}
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ delay: 0.1 * (index + 1), duration: 0.4 }}
