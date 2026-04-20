@@ -84,6 +84,7 @@ export default function CategoryManager() {
             placeholder="e.g. Reading, Fitness..."
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleCreate()}
           />
 
           <p className="text-xs font-bold uppercase tracking-wider text-muted mb-2">Choose Color Code</p>
