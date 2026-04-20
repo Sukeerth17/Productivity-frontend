@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createCategory,
@@ -83,6 +83,28 @@ export function useAppState(options?: UseAppStateOptions) {
   };
   const queryClient = useQueryClient();
 
+  const midnightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+useEffect(() => {
+  const scheduleReset = () => {
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0); // next midnight in local time
+    const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+
+    midnightTimerRef.current = setTimeout(() => {
+      void queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      scheduleReset(); // reschedule for the next midnight
+    }, msUntilMidnight);
+  };
+
+  scheduleReset();
+
+  return () => {
+    if (midnightTimerRef.current) clearTimeout(midnightTimerRef.current);
+  };
+}, [queryClient]);
   const categoriesQuery = useQuery({
     queryKey: ["categories"],
     queryFn: getCategories,
@@ -173,9 +195,16 @@ export function useAppState(options?: UseAppStateOptions) {
   const categories = useMemo(() => (categoriesQuery.data ?? []).map(mapCategory), [categoriesQuery.data]);
   const tasks = useMemo(() => (tasksQuery.data?.items ?? []).map(mapTask), [tasksQuery.data?.items]);
 
-  const completedToday = tasks.filter((task) => task.completed).length;
-  const totalToday = tasks.length;
-  const progressPercent = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
+  const todayStr = new Date().toLocaleDateString("en-CA"); // gives YYYY-MM-DD in local time
+
+const todayTasks = tasks.filter((task) => {
+  const taskDate = new Date(task.createdAt).toLocaleDateString("en-CA");
+  return taskDate === todayStr;
+});
+
+const completedToday = todayTasks.filter((task) => task.completed).length;
+const totalToday = todayTasks.length;
+const progressPercent = totalToday > 0 ? Math.round((completedToday / totalToday) * 100) : 0;
 
   const addCategory = useCallback((cat: Omit<Category, "id">) => {
     createCategoryMutation.mutate({ name: cat.name, color: cat.color, icon: cat.icon });
