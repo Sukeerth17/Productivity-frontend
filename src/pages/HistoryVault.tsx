@@ -1,8 +1,9 @@
 import { Flame, Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import AppHeader from "@/components/AppHeader";
 import { getCategoryColorHex } from "@/lib/store";
-import { getCategoryCompletion, getHistorySummary } from "@/lib/api";
+import { getHistorySummary, getProductivityStats } from "@/lib/api";
 
 export default function HistoryVault() {
   const historySummaryQuery = useQuery({
@@ -10,12 +11,14 @@ export default function HistoryVault() {
     queryFn: getHistorySummary,
   });
 
-  const categoryCompletionQuery = useQuery({
-    queryKey: ["category-completion", 30],
-    queryFn: () => getCategoryCompletion(30),
+  const productivityStatsQuery = useQuery({
+    queryKey: ["productivity-stats"],
+    queryFn: getProductivityStats,
   });
 
   const summary = historySummaryQuery.data;
+  const stats = productivityStatsQuery.data;
+
   const totalSinceStart = summary?.since_start_total_tasks ?? 0;
   const completedSinceStart = summary?.since_start_completed_tasks ?? 0;
   const completionSinceStart = totalSinceStart > 0 ? completedSinceStart / totalSinceStart : 0;
@@ -25,16 +28,21 @@ export default function HistoryVault() {
   const circleCircumference = 2 * Math.PI * circleRadius;
   const doneStroke = circleCircumference * completionSinceStart;
 
-  const catStats = (categoryCompletionQuery.data ?? []).map((cat) => ({
-    ...cat,
-    pct: Math.round(cat.completion_rate),
-    colorHex: getCategoryColorHex(cat.color),
-  }));
+  // Prepare pie chart data
+  const pieData = (stats?.category_breakdown ?? [])
+    .filter((cat) => cat.total_tasks > 0)
+    .map((cat) => ({
+      name: cat.category_name,
+      value: cat.completed_tasks,
+      color: getCategoryColorHex(cat.color),
+    }));
+
+  const COLORS = pieData.map((item) => item.color);
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <div className="max-w-5xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
+      <div className="max-w-6xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
         <h1 className="text-2xl sm:text-3xl font-heading font-extrabold mb-1">History Vault</h1>
         <p className="text-muted text-sm mb-8">Your legacy of consistency.</p>
 
@@ -113,27 +121,71 @@ export default function HistoryVault() {
           </div>
         </div>
 
-        <div className="card-game p-4 sm:p-6">
-          <h2 className="text-lg font-heading font-extrabold mb-1">30-Day Completion by Category</h2>
-          <p className="text-xs text-muted mb-6">Powered by backend stats API</p>
-          <div className="flex items-end gap-4 sm:gap-8 justify-start sm:justify-center h-56 overflow-x-auto pb-1">
-            {catStats.map((cat) => (
-              <div key={cat.category_id} className="flex flex-col items-center gap-2 min-w-[88px]">
-                <div className="relative w-16" style={{ height: `${Math.max(cat.pct * 1.6, 10)}px` }}>
-                  <div className="absolute bottom-0 w-full rounded-t-inner" style={{ height: "100%", backgroundColor: cat.colorHex }} />
-                </div>
-                <span className="text-xs font-heading font-bold text-center">{cat.category_name}</span>
-                <span className="text-[10px] text-muted font-bold">{cat.completed_tasks}/{cat.total_tasks}</span>
-              </div>
-            ))}
-            {!categoryCompletionQuery.isLoading && catStats.length === 0 ? (
-              <div className="text-sm text-muted font-bold">No category data in the last 30 days.</div>
-            ) : null}
+        {/* Productivity Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          {/* All-time */}
+          <div className="card-game p-5 sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted mb-3">All-Time</p>
+            <p className="text-3xl font-heading font-extrabold mb-2">{stats?.alltime_completion_rate ?? 0}%</p>
+            <p className="text-xs text-muted">
+              {stats?.alltime_completed_tasks}/{stats?.alltime_total_tasks} tasks completed
+            </p>
           </div>
-          <div className="flex justify-between text-xs text-muted mt-2 px-4">
-            <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+
+          {/* This Month */}
+          <div className="card-game p-5 sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted mb-3">This Month</p>
+            <p className="text-3xl font-heading font-extrabold mb-2">{stats?.month_completion_rate ?? 0}%</p>
+            <p className="text-xs text-muted">
+              {stats?.month_completed_tasks}/{stats?.month_total_tasks} tasks completed
+            </p>
+          </div>
+
+          {/* This Week */}
+          <div className="card-game p-5 sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted mb-3">This Week</p>
+            <p className="text-3xl font-heading font-extrabold mb-2">{stats?.week_completion_rate ?? 0}%</p>
+            <p className="text-xs text-muted">
+              {stats?.week_completed_tasks}/{stats?.week_total_tasks} tasks completed
+            </p>
+          </div>
+
+          {/* Today */}
+          <div className="card-game p-5 sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted mb-3">Today</p>
+            <p className="text-3xl font-heading font-extrabold mb-2">{stats?.day_completion_rate ?? 0}%</p>
+            <p className="text-xs text-muted">
+              {stats?.day_completed_tasks}/{stats?.day_total_tasks} tasks completed
+            </p>
           </div>
         </div>
+
+        {/* Category Breakdown Pie Chart */}
+        {pieData.length > 0 && (
+          <div className="card-game p-5 sm:p-6">
+            <h2 className="text-lg font-heading font-extrabold mb-6">Category Breakdown (All-Time)</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) => `${name}: ${value}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </div>
   );

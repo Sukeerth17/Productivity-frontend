@@ -10,26 +10,27 @@ const milestones = [25, 50, 75, 100];
 
 export default function ProgressBar({ percent, height = 32 }: ProgressBarProps) {
   return (
-    <div className="relative w-full border-game rounded-inner overflow-visible" style={{ height }}>
-      <div className="absolute inset-0 rounded-inner bg-card" />
+    <div className="relative w-full" style={{ height }}>
+      <div className="absolute inset-0 border-game rounded-inner bg-card" />
       <motion.div
         className="absolute inset-y-0 left-0 rounded-inner bg-primary"
         initial={{ width: 0 }}
         animate={{ width: `${Math.min(percent, 100)}%` }}
         transition={{ duration: 0.8, ease: "easeOut" }}
       />
-      {milestones.map((m) => (
+      {milestones.map((m, index) => (
         <motion.div
           key={m}
-          className="absolute z-10 flex items-center justify-center"
+          className="absolute flex items-center justify-center"
           style={{ 
             left: `${m}%`,
             top: '50%',
-            transform: 'translate(-50%, -50%)'
+            transform: 'translate(-50%, -50%)',
+            zIndex: 10
           }}
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ delay: 0.1 * (milestones.indexOf(m) + 1), duration: 0.4 }}
+          transition={{ delay: 0.1 * (index + 1), duration: 0.4 }}
         >
           <Star
             size={20}

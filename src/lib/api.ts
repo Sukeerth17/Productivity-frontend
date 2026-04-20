@@ -74,6 +74,32 @@ export interface ApiCategoryCompletionStats {
   completion_rate: number;
 }
 
+export interface ApiCategoryBreakdownItem {
+  category_id: string;
+  category_name: string;
+  color: string;
+  total_tasks: number;
+  completed_tasks: number;
+  completion_rate: number;
+}
+
+export interface ApiProductivityStats {
+  alltime_total_tasks: number;
+  alltime_completed_tasks: number;
+  alltime_completion_rate: number;
+  day_total_tasks: number;
+  day_completed_tasks: number;
+  day_completion_rate: number;
+  week_total_tasks: number;
+  week_completed_tasks: number;
+  week_completion_rate: number;
+  month_total_tasks: number;
+  month_completed_tasks: number;
+  month_completion_rate: number;
+  category_breakdown: ApiCategoryBreakdownItem[] | null;
+  updated_at: string;
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
 const REQUEST_TIMEOUT_MS = 20_000;
 const TOKEN_KEY = "productvity-auth-token";
@@ -270,4 +296,8 @@ export function getHistorySummary() {
 
 export function getCategoryCompletion(days = 30) {
   return request<ApiCategoryCompletionStats[]>(`/stats/category-completion?days=${days}`);
+}
+
+export function getProductivityStats() {
+  return request<ApiProductivityStats>("/stats/productivity");
 }
