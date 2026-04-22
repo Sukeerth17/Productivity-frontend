@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Pencil, Trash2, GripVertical, Plus, Star } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import { categoryPath } from "@/lib/utils";
 import { useAppState, CATEGORY_COLORS, getCategoryColorHex } from "@/lib/store";
 
 export default function CategoryManager() {
@@ -40,7 +41,7 @@ export default function CategoryManager() {
           {store.categories.map((cat) => {
             const colorHex = getCategoryColorHex(cat.color);
             return (
-              <motion.div key={cat.id} className="card-game px-3 sm:px-4 py-4 flex items-center gap-2 sm:gap-3" layout>
+              <motion.div key={cat.id} className="card-game px-3 sm:px-4 py-4 flex items-center gap-2 sm:gap-3 cursor-pointer" layout onClick={() => navigate(categoryPath(cat.name))}>
                 <GripVertical size={18} className="text-muted cursor-grab" />
                 <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: colorHex }}>
                   <Star size={16} className="text-foreground" />
