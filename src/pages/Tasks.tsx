@@ -26,13 +26,16 @@ export default function Tasks() {
     }
   }, [searchParams, setSearchParams]);
 
+  const searchFilter = searchParams.get("search") || "";
+
   const cats = useQuery({ queryKey: ["categories"], queryFn: api.listCategories });
   const tasks = useQuery({
-    queryKey: ["tasks", { filterCat, filterPriority, filterStatus }],
+    queryKey: ["tasks", { filterCat, filterPriority, filterStatus, searchFilter }],
     queryFn: () => api.listTasks({
       category_id: filterCat || undefined,
       priority: filterPriority === "all" ? undefined : filterPriority,
       completed: filterStatus === "all" ? undefined : filterStatus === "done",
+      search: searchFilter || undefined,
       limit: 100,
     }),
   });
@@ -67,6 +70,16 @@ export default function Tasks() {
 
       <GlassCard className="p-4">
         <div className="flex flex-wrap gap-2 items-center text-sm">
+          <input
+            value={searchFilter}
+            onChange={(e) => {
+              searchParams.set("search", e.target.value);
+              setSearchParams(searchParams, { replace: true });
+            }}
+            placeholder="Search tasks..."
+            className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60 transition text-sm flex-1 sm:max-w-xs"
+          />
+          <span className="hidden sm:inline text-white/30">|</span>
           <Filter className="size-4 text-muted-foreground" />
           <Select value={filterCat} onChange={setFilterCat}>
             <option value="">All categories</option>

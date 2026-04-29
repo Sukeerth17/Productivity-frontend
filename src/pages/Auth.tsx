@@ -1,18 +1,21 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
+import { Sparkles, Loader2, Eye, EyeOff, Sun, Moon } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/store/auth";
+import { useTheme } from "@/store/theme";
 import { toast } from "sonner";
 
 export default function Auth({ mode }: { mode: "login" | "signup" }) {
   const setAuth = useAuth((s) => s.setAuth);
+  const { mode: themeMode, toggle: toggleTheme } = useTheme();
   const nav = useNavigate();
   const loc = useLocation();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const [isResetMode, setIsResetMode] = useState(false);
   const isSignup = mode === "signup";
 
   async function onSubmit(e: React.FormEvent) {
@@ -22,12 +25,18 @@ export default function Auth({ mode }: { mode: "login" | "signup" }) {
     if (isSignup && form.name.trim().length < 2) return toast.error("Please enter your name");
     setLoading(true);
     try {
-      const res = isSignup
-        ? await api.signup(form)
-        : await api.login({ email: form.email, password: form.password });
-      setAuth(res.token, res.user);
-      toast.success(isSignup ? "Welcome aboard!" : "Welcome back!");
-      nav((loc.state as any)?.from || "/", { replace: true });
+      if (isResetMode) {
+        await api.resetPassword({ email: form.email, password: form.password });
+        toast.success("Password updated successfully. Please log in.");
+        setIsResetMode(false);
+      } else {
+        const res = isSignup
+          ? await api.signup(form)
+          : await api.login({ email: form.email, password: form.password });
+        setAuth(res.token, res.user);
+        toast.success(isSignup ? "Welcome aboard!" : "Welcome back!");
+        nav((loc.state as any)?.from || "/", { replace: true });
+      }
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "Something went wrong");
     } finally { setLoading(false); }
@@ -67,16 +76,41 @@ export default function Auth({ mode }: { mode: "login" | "signup" }) {
         </motion.div>
       </div>
 
-      <div className="flex items-center justify-center p-6 sm:p-10">
+      <div className="flex items-center justify-center p-6 sm:p-10 relative">
+        <div className="absolute top-6 right-6 z-10">
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="relative size-10 rounded-xl bg-white/5 border border-white/10 grid place-items-center hover:bg-white/10 overflow-hidden"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={themeMode}
+                initial={{ y: -14, opacity: 0, rotate: -45 }}
+                animate={{ y: 0, opacity: 1, rotate: 0 }}
+                exit={{ y: 14, opacity: 0, rotate: 45 }}
+                transition={{ duration: 0.35 }}
+                className="absolute inset-0 grid place-items-center"
+              >
+                {themeMode === "dark" ? <Moon className="size-4" /> : <Sun className="size-4" />}
+              </motion.span>
+            </AnimatePresence>
+          </motion.button>
+        </div>
+
         <motion.form
           initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }}
           onSubmit={onSubmit}
           className="glass-strong w-full max-w-md p-8 space-y-5"
         >
           <div>
-            <h2 className="font-display text-3xl">{isSignup ? "Create account" : "Welcome back"}</h2>
+            <h2 className="font-display text-3xl">
+              {isResetMode ? "Reset Password" : isSignup ? "Create account" : "Welcome back"}
+            </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {isSignup ? "Start building momentum today" : "Sign in to your dashboard"}
+              {isResetMode ? "Enter your credentials to update" : isSignup ? "Start building momentum today" : "Sign in to your dashboard"}
             </p>
           </div>
 
@@ -103,13 +137,21 @@ export default function Auth({ mode }: { mode: "login" | "signup" }) {
             </div>
           </Field>
 
+          {!isSignup && (
+            <div className="text-right">
+              <button type="button" onClick={() => setIsResetMode(!isResetMode)} className="text-xs text-primary/80 hover:underline">
+                {isResetMode ? "Back to login" : "Forgot or change password?"}
+              </button>
+            </div>
+          )}
+
           <motion.button
             whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.985 }}
             disabled={loading}
             className="w-full py-3 rounded-xl bg-gradient-primary text-primary-foreground font-medium shadow-glow disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="size-4 animate-spin" />}
-            {isSignup ? "Create account" : "Sign in"}
+            {isResetMode ? "Reset Password" : isSignup ? "Create account" : "Sign in"}
           </motion.button>
 
 

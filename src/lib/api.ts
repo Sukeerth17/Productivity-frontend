@@ -71,6 +71,8 @@ export const api = {
     request<AuthResponse>("/auth/signup", { method: "POST", body: JSON.stringify(b) }),
   login: (b: { email: string; password: string }) =>
     request<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(b) }),
+  resetPassword: (b: { email: string; password: string }) =>
+    request<{ message: string }>("/auth/reset-password", { method: "POST", body: JSON.stringify(b) }),
   me: () => request<User>("/auth/me"),
   updateMe: (b: { name?: string; password?: string }) => request<User>("/auth/me", { method: "PATCH", body: JSON.stringify(b) }),
 

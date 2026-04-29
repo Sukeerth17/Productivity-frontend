@@ -24,20 +24,17 @@ export function Topbar() {
         <div className="relative flex-1 max-w-md hidden sm:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <input
-            placeholder="Search tasks, categories…"
+            placeholder="Search tasks..."
+            onChange={(e) => nav(`/tasks?search=${encodeURIComponent(e.target.value)}`)}
             className="w-full pl-9 pr-3 py-2 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/30 transition text-sm"
           />
         </div>
         <div className="flex-1" />
         <motion.button whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
+          onClick={() => nav("/tasks")}
           aria-label="Search"
           className="sm:hidden size-10 rounded-xl bg-white/5 border border-white/10 grid place-items-center hover:bg-white/10">
           <Search className="size-4" />
-        </motion.button>
-        <motion.button whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
-          aria-label="Notifications"
-          className="hidden sm:grid size-10 rounded-xl bg-white/5 border border-white/10 place-items-center hover:bg-white/10">
-          <Bell className="size-4" />
         </motion.button>
         <motion.button
           whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
