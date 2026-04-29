@@ -1,303 +1,103 @@
-export interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-  created_at: string;
+// Typed API client for the FastAPI productivity backend.
+// Configure VITE_API_URL or set localStorage("api_base") to override.
+
+export type Priority = "low" | "medium" | "high";
+
+export interface User { id: string; name: string; email: string; created_at: string }
+export interface AuthResponse { token: string; user: User }
+export interface Category { id: string; name: string; color: string; icon: string; created_at: string }
+export interface SubTask { id: string; title: string; completed: boolean; position: number; task_id: string }
+export interface Task {
+  id: string; title: string; category_id: string; notes: string | null;
+  completed: boolean; is_habit: boolean; priority: Priority | null; due_time: string | null;
+  created_at: string; completed_at: string | null; updated_at: string; subtasks: SubTask[];
+}
+export interface PaginatedTasks { items: Task[]; total: number; limit: number; offset: number }
+export interface DashboardStats {
+  total_tasks: number; completed_tasks: number; active_tasks: number;
+  categories: number; completion_rate: number;
+}
+export interface HistorySummary {
+  started_at: string; since_start_total_tasks: number; since_start_completed_tasks: number;
+  completion_rate: number; current_streak: number; total_momentum: number;
+}
+export interface CategoryBreakdownItem {
+  category_id: string; category_name: string; color: string;
+  total_tasks: number; completed_tasks: number; completion_rate: number;
+}
+export interface ProductivityStats {
+  alltime_total_tasks: number; alltime_completed_tasks: number; alltime_completion_rate: number;
+  month_total_tasks: number; month_completed_tasks: number; month_completion_rate: number;
+  week_total_tasks: number; week_completed_tasks: number; week_completion_rate: number;
+  day_total_tasks: number; day_completed_tasks: number; day_completion_rate: number;
+  category_breakdown: CategoryBreakdownItem[] | null; updated_at: string;
 }
 
-export interface AuthResponse {
-  token: string;
-  user: AuthUser;
+const DEFAULT_BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
+
+export function getApiBase(): string {
+  if (typeof window === "undefined") return DEFAULT_BASE;
+  return localStorage.getItem("api_base") || DEFAULT_BASE;
+}
+export function setApiBase(url: string) {
+  localStorage.setItem("api_base", url.replace(/\/$/, ""));
 }
 
-export interface ApiCategory {
-  id: string;
-  name: string;
-  color: string;
-  icon: string;
-  created_at: string;
+export class ApiError extends Error {
+  constructor(public status: number, message: string) { super(message); }
 }
 
-export interface ApiSubTask {
-  id: string;
-  title: string;
-  completed: boolean;
-  position: number;
-  task_id: string;
-}
-
-export interface ApiTask {
-  id: string;
-  title: string;
-  category_id: string;
-  notes: string | null;
-  completed: boolean;
-  is_habit: boolean;
-  priority: "low" | "medium" | "high" | null;
-  due_time: string | null;
-  created_at: string;
-  completed_at: string | null;
-  updated_at: string;
-  subtasks: ApiSubTask[];
-}
-
-export interface ApiPaginatedTasks {
-  items: ApiTask[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-export interface ApiDashboardStats {
-  total_tasks: number;
-  completed_tasks: number;
-  active_tasks: number;
-  categories: number;
-  completion_rate: number;
-}
-
-export interface ApiHistorySummary {
-  started_at: string;
-  since_start_total_tasks: number;
-  since_start_completed_tasks: number;
-  completion_rate: number;
-  current_streak: number;
-  total_momentum: number;
-}
-
-export interface ApiCategoryCompletionStats {
-  category_id: string;
-  category_name: string;
-  color: string;
-  total_tasks: number;
-  completed_tasks: number;
-  completion_rate: number;
-}
-
-export interface ApiCategoryBreakdownItem {
-  category_id: string;
-  category_name: string;
-  color: string;
-  total_tasks: number;
-  completed_tasks: number;
-  completion_rate: number;
-}
-
-export interface ApiProductivityStats {
-  alltime_total_tasks: number;
-  alltime_completed_tasks: number;
-  alltime_completion_rate: number;
-  day_total_tasks: number;
-  day_completed_tasks: number;
-  day_completion_rate: number;
-  week_total_tasks: number;
-  week_completed_tasks: number;
-  week_completion_rate: number;
-  month_total_tasks: number;
-  month_completed_tasks: number;
-  month_completion_rate: number;
-  category_breakdown: ApiCategoryBreakdownItem[] | null;
-  updated_at: string;
-}
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000/api/v1";
-const REQUEST_TIMEOUT_MS = 20_000;
-const TOKEN_KEY = "productvity-auth-token";
-
-function buildErrorMessage(error: unknown): string {
-  if (error instanceof DOMException && error.name === "AbortError") {
-    return "Server is waking up. Please try again in a few seconds.";
-  }
-  if (error instanceof TypeError) {
-    return "Cannot reach server. Check your internet and try again.";
-  }
-  return "Request failed";
-}
-
-function withTimeoutSignal(timeoutMs: number): { signal: AbortSignal; cleanup: () => void } {
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-  return {
-    signal: controller.signal,
-    cleanup: () => window.clearTimeout(timeoutId),
+async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
+  const token = localStorage.getItem("auth_token");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(opts.headers as Record<string, string> | undefined),
   };
-}
-
-function getApiRoot(): string {
-  try {
-    const url = new URL(API_BASE);
-    return `${url.origin}${url.pathname.replace(/\/api\/v1\/?$/, "")}`;
-  } catch {
-    return API_BASE.replace(/\/api\/v1\/?$/, "");
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${getApiBase()}/api/v1${path}`, { ...opts, headers });
+  if (res.status === 204) return undefined as T;
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!res.ok) {
+    const detail = (data && (data.detail || data.message)) || res.statusText;
+    throw new ApiError(res.status, typeof detail === "string" ? detail : JSON.stringify(detail));
   }
+  return data as T;
 }
 
-function getStoredToken(): string | null {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
+export const api = {
+  // auth
+  signup: (b: { name: string; email: string; password: string }) =>
+    request<AuthResponse>("/auth/signup", { method: "POST", body: JSON.stringify(b) }),
+  login: (b: { email: string; password: string }) =>
+    request<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify(b) }),
+  me: () => request<User>("/auth/me"),
+  updateMe: (b: { name?: string; password?: string }) => request<User>("/auth/me", { method: "PATCH", body: JSON.stringify(b) }),
 
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const { signal, cleanup } = withTimeoutSignal(REQUEST_TIMEOUT_MS);
-  let response: Response;
+  // categories
+  listCategories: () => request<Category[]>("/categories"),
+  createCategory: (b: { name: string; color?: string; icon?: string }) =>
+    request<Category>("/categories", { method: "POST", body: JSON.stringify(b) }),
+  updateCategory: (id: string, b: Partial<{ name: string; color: string; icon: string }>) =>
+    request<Category>(`/categories/${id}`, { method: "PATCH", body: JSON.stringify(b) }),
+  deleteCategory: (id: string) => request<void>(`/categories/${id}`, { method: "DELETE" }),
 
-  const token = getStoredToken();
-  const headers = new Headers(options?.headers ?? {});
-  if (!headers.has("Content-Type") && options?.body) {
-    headers.set("Content-Type", "application/json");
-  }
-  if (token && !headers.has("Authorization")) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
+  // tasks
+  listTasks: (q: { category_id?: string; completed?: boolean; priority?: Priority; limit?: number; offset?: number } = {}) => {
+    const p = new URLSearchParams();
+    Object.entries(q).forEach(([k, v]) => v !== undefined && v !== null && v !== "" && p.append(k, String(v)));
+    const qs = p.toString();
+    return request<PaginatedTasks>(`/tasks${qs ? `?${qs}` : ""}`);
+  },
+  createTask: (b: { title: string; category_id: string; notes?: string; priority?: Priority | null; due_time?: string | null; is_habit?: boolean }) =>
+    request<Task>("/tasks", { method: "POST", body: JSON.stringify(b) }),
+  updateTask: (id: string, b: Partial<Task>) =>
+    request<Task>(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(b) }),
+  deleteTask: (id: string) => request<void>(`/tasks/${id}`, { method: "DELETE" }),
+  toggleTask: (id: string) => request<Task>(`/tasks/${id}/toggle`, { method: "POST" }),
 
-  try {
-    response = await fetch(`${API_BASE}${path}`, {
-      ...options,
-      headers,
-      signal,
-    });
-  } catch (error) {
-    throw new Error(buildErrorMessage(error));
-  } finally {
-    cleanup();
-  }
-
-  if (!response.ok) {
-    let detail = "Request failed";
-    try {
-      const data = await response.json();
-      detail = data.detail ?? detail;
-    } catch {
-      // ignore non-json failures
-    }
-    throw new Error(detail);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json() as Promise<T>;
-}
-
-export async function warmUpBackend() {
-  const { signal, cleanup } = withTimeoutSignal(8_000);
-  try {
-    await fetch(`${getApiRoot()}/health`, { method: "GET", cache: "no-store", signal });
-  } catch {
-    // Best-effort warmup only.
-  } finally {
-    cleanup();
-  }
-}
-
-export function signUp(payload: { name: string; email: string; password: string }) {
-  return request<AuthResponse>("/auth/signup", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function logIn(payload: { email: string; password: string }) {
-  return request<AuthResponse>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function getCurrentUser() {
-  return request<AuthUser>("/auth/me");
-}
-
-export function updateProfile(payload: { name: string }) {
-  return request<AuthUser>("/auth/me", {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function getCategories() {
-  return request<ApiCategory[]>("/categories");
-}
-
-export function createCategory(payload: { name: string; color: string; icon: string }) {
-  return request<ApiCategory>("/categories", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function patchCategory(categoryId: string, payload: { name?: string; color?: string; icon?: string }) {
-  return request<ApiCategory>(`/categories/${categoryId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function deleteCategory(categoryId: string) {
-  return request<void>(`/categories/${categoryId}`, {
-    method: "DELETE",
-  });
-}
-
-export function getTasks(params?: { categoryId?: string; completed?: boolean; limit?: number; offset?: number }) {
-  const query = new URLSearchParams();
-  if (params?.categoryId) query.set("category_id", params.categoryId);
-  if (typeof params?.completed === "boolean") query.set("completed", String(params.completed));
-  query.set("limit", String(params?.limit ?? 200));
-  query.set("offset", String(params?.offset ?? 0));
-  return request<ApiPaginatedTasks>(`/tasks?${query.toString()}`);
-}
-
-export function createTask(payload: {
-  title: string;
-  category_id: string;
-  notes?: string | null;
-  completed?: boolean;
-  is_habit?: boolean;
-  priority?: "low" | "medium" | "high";
-  due_time?: string | null;
-  subtasks?: Array<{ title: string; completed?: boolean }>;
-}) {
-  return request<ApiTask>("/tasks", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function deleteTask(taskId: string) {
-  return request<void>(`/tasks/${taskId}`, {
-    method: "DELETE",
-  });
-}
-
-export function toggleTask(taskId: string) {
-  return request<ApiTask>(`/tasks/${taskId}/toggle`, {
-    method: "POST",
-  });
-}
-
-export function toggleSubTask(taskId: string, subTaskId: string) {
-  return request<ApiSubTask>(`/tasks/${taskId}/subtasks/${subTaskId}/toggle`, {
-    method: "POST",
-  });
-}
-
-export function getDashboardStats() {
-  return request<ApiDashboardStats>("/stats/dashboard");
-}
-
-export function getHistorySummary() {
-  return request<ApiHistorySummary>("/stats/history-summary");
-}
-
-export function getCategoryCompletion(days = 30) {
-  return request<ApiCategoryCompletionStats[]>(`/stats/category-completion?days=${days}`);
-}
-
-export function getProductivityStats() {
-  return request<ApiProductivityStats>("/stats/productivity");
-}
+  // stats
+  dashboard: () => request<DashboardStats>("/stats/dashboard"),
+  history: () => request<HistorySummary>("/stats/history-summary"),
+  productivity: () => request<ProductivityStats>("/stats/productivity"),
+};

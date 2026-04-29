@@ -1,90 +1,94 @@
-import { useState } from "react";
-import { ArrowLeft, LogOut, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import AppHeader from "@/components/AppHeader";
-import { useAuth } from "@/lib/auth";
+import { useEffect, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { useAuth } from "@/store/auth";
+import { GlassCard } from "@/components/glass/GlassCard";
+import { Loader2, Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 export default function Settings() {
-  const navigate = useNavigate();
-  const { user, logout, updateName } = useAuth();
-  const [name, setName] = useState(user?.name ?? "");
-  const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { user, setAuth, token } = useAuth();
+  const qc = useQueryClient();
+  const [name, setName] = useState(user?.name || "");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSaveName = async () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await updateName(trimmed);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1800);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to update name right now.");
-    } finally {
-      setSaving(false);
-    }
-  };
+
+  useEffect(() => { setName(user?.name || ""); }, [user]);
+
+  const save = useMutation({
+    mutationFn: () => api.updateMe({ name: name.trim() }),
+    onSuccess: (u) => { if (token) setAuth(token, u); qc.invalidateQueries(); toast.success("Profile updated"); },
+    onError: (e: any) => toast.error(e?.message || "Could not save"),
+  });
+
+  const updatePassword = useMutation({
+    mutationFn: () => api.updateMe({ password: password.trim() }),
+    onSuccess: () => { setPassword(""); setConfirmPassword(""); toast.success("Password updated successfully"); },
+    onError: (e: any) => toast.error(e?.message || "Could not update password"),
+  });
 
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
-      <div className="max-w-2xl mx-auto px-4 py-5 sm:px-6 sm:py-8">
-        <div className="flex items-center gap-3 mb-8">
-          <button onClick={() => navigate("/")} className="w-10 h-10 rounded-full border-game flex items-center justify-center btn-press">
-            <ArrowLeft size={18} />
-          </button>
-          <h1 className="text-xl sm:text-2xl font-heading font-extrabold">Settings</h1>
-        </div>
-
-        <div className="card-game p-5 sm:p-6 mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center border-game">
-              <User size={18} className="text-primary" />
-            </div>
-            <h2 className="font-heading font-extrabold text-lg">Account</h2>
-          </div>
-          <div className="space-y-4 text-sm">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted">Name</p>
-              <div className="mt-1 flex flex-col sm:flex-row gap-2 sm:items-center">
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full border-game rounded-inner px-3 py-2 font-body bg-card focus:outline-none focus:ring-2 focus:ring-primary"
-                  placeholder="Your name"
-                />
-                <button
-                  onClick={handleSaveName}
-                  disabled={saving}
-                  className="shrink-0 px-4 py-2 rounded-inner border-game bg-primary text-primary-foreground font-heading font-bold btn-press disabled:opacity-70"
-                >
-                  {saving ? "Saving..." : "Save"}
-                </button>
-              </div>
-              {saved ? <p className="text-xs font-bold text-accent mt-2">Name updated.</p> : null}
-              {error ? <p className="text-xs font-bold text-primary mt-2">{error}</p> : null}
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-muted">Email</p>
-              <p className="font-heading font-bold text-base break-all">{user?.email ?? "Unknown"}</p>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => {
-            logout();
-            navigate("/login");
-          }}
-          className="w-full py-3 rounded-inner border-game bg-primary text-primary-foreground font-heading font-bold uppercase shadow-tactile btn-press flex items-center justify-center gap-2"
-        >
-          <LogOut size={18} />
-          Logout
-        </button>
+    <div className="space-y-6 max-w-3xl">
+      <div>
+        <div className="text-sm text-muted-foreground">Account</div>
+        <h1 className="font-display text-3xl md:text-4xl">Settings</h1>
       </div>
+
+      <GlassCard>
+        <div className="font-display text-xl mb-4">Profile</div>
+        <div className="space-y-3">
+          <Field label="Name">
+            <input value={name} onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60" />
+          </Field>
+          <Field label="Email"><div className="px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5 text-muted-foreground">{user?.email}</div></Field>
+          <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.985 }}
+            disabled={!name.trim() || save.isPending}
+            onClick={() => save.mutate()}
+            className="px-5 py-2.5 rounded-xl bg-gradient-primary text-primary-foreground shadow-glow flex items-center gap-2 disabled:opacity-60">
+            {save.isPending && <Loader2 className="size-4 animate-spin" />} Save changes
+          </motion.button>
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <div className="font-display text-xl mb-4">Change Password</div>
+        <div className="space-y-3">
+          <Field label="New Password">
+            <div className="relative">
+              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)}
+                className="absolute top-1/2 right-3 -translate-y-1/2 size-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition">
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
+          </Field>
+          <Field label="Confirm Password">
+            <input type={showPassword ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="••••••••" className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60" />
+          </Field>
+          <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.985 }}
+            disabled={!password.trim() || password.length < 8 || password !== confirmPassword || updatePassword.isPending}
+            onClick={() => updatePassword.mutate()}
+            className="px-5 py-2.5 rounded-xl bg-gradient-primary text-primary-foreground shadow-glow flex items-center gap-2 disabled:opacity-60">
+            {updatePassword.isPending && <Loader2 className="size-4 animate-spin" />} Update password
+          </motion.button>
+        </div>
+      </GlassCard>
+
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">{label}</div>
+      {children}
+    </label>
   );
 }
