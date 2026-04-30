@@ -6,6 +6,7 @@ import { ArrowLeft, Pencil, Trash2, Plus, Tag, Loader2, Filter } from "lucide-re
 import { api, type Priority, type Task, type Category } from "@/lib/api";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Shimmer } from "@/components/glass/Skeleton";
+import { SmoothLoad } from "@/components/glass/SmoothLoad";
 import { TaskListItem } from "@/components/tasks/TaskListItem";
 import { NewTaskModal } from "@/components/tasks/NewTaskModal";
 import { toast } from "sonner";
@@ -64,17 +65,7 @@ export default function CategoryDetail() {
     onError: (e: any) => toast.error(e?.message || "Could not delete category"),
   });
 
-  if (cats.isLoading || (id && !category && !cats.isError)) {
-    return (
-      <div className="space-y-6">
-        <Shimmer className="h-10 w-32" />
-        <Shimmer className="h-40 w-full" />
-        <div className="grid gap-3">{Array.from({ length: 5 }).map((_, i) => <Shimmer key={i} className="h-16" />)}</div>
-      </div>
-    );
-  }
-
-  if (!category) {
+  if (!cats.isLoading && id && !category && !cats.isError) {
     return (
       <div className="text-center py-20">
         <div className="text-xl font-display mb-4">Category not found</div>
@@ -87,7 +78,6 @@ export default function CategoryDetail() {
 
   const items = tasks.data?.items ?? [];
   const activeCount = items.filter(t => !t.completed).length;
-  const doneCount = items.filter(t => t.completed).length;
 
   return (
     <div className="space-y-6">
@@ -102,25 +92,32 @@ export default function CategoryDetail() {
         </div>
       </div>
 
-      <GlassCard className="relative overflow-hidden p-8">
-        <div className="absolute -top-24 -right-24 size-64 rounded-full opacity-20 blur-3xl" style={{ background: category.color }} />
-        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="size-16 rounded-3xl grid place-items-center shadow-glow-lg" style={{ background: `linear-gradient(135deg, ${category.color}, ${category.color}aa)` }}>
-              <Tag className="size-8" style={{ color: "hsl(30 25% 8%)" }} />
+      <SmoothLoad
+        isLoading={cats.isLoading}
+        loadingComponent={<Shimmer className="h-40 w-full" />}
+      >
+        {category && (
+          <GlassCard className="relative overflow-hidden p-8">
+            <div className="absolute -top-24 -right-24 size-64 rounded-full opacity-20 blur-3xl" style={{ background: category.color }} />
+            <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-center gap-5">
+                <div className="size-16 rounded-3xl grid place-items-center shadow-glow-lg" style={{ background: `linear-gradient(135deg, ${category.color}, ${category.color}aa)` }}>
+                  <Tag className="size-8" style={{ color: "hsl(30 25% 8%)" }} />
+                </div>
+                <div>
+                  <h1 className="font-display text-3xl md:text-4xl">{category.name}</h1>
+                  <p className="text-muted-foreground mt-1">{items.length} total tasks · {activeCount} active</p>
+                </div>
+              </div>
+              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                onClick={() => setShowNew(true)}
+                className="px-5 py-3 rounded-xl bg-gradient-primary text-primary-foreground font-medium shadow-glow flex items-center justify-center gap-2">
+                <Plus className="size-5" /> Add Task
+              </motion.button>
             </div>
-            <div>
-              <h1 className="font-display text-3xl md:text-4xl">{category.name}</h1>
-              <p className="text-muted-foreground mt-1">{items.length} total tasks · {activeCount} active</p>
-            </div>
-          </div>
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-            onClick={() => setShowNew(true)}
-            className="px-5 py-3 rounded-xl bg-gradient-primary text-primary-foreground font-medium shadow-glow flex items-center justify-center gap-2">
-            <Plus className="size-5" /> Add Task
-          </motion.button>
-        </div>
-      </GlassCard>
+          </GlassCard>
+        )}
+      </SmoothLoad>
 
       <div className="flex items-center justify-between">
         <div className="flex gap-2 p-1 rounded-xl bg-white/5 border border-white/10 w-fit">
@@ -130,34 +127,39 @@ export default function CategoryDetail() {
         </div>
       </div>
 
-      {tasks.isLoading ? (
-        <div className="grid gap-3">{Array.from({ length: 5 }).map((_, i) => <Shimmer key={i} className="h-16" />)}</div>
-      ) : items.length === 0 ? (
-        <GlassCard className="text-center py-20">
-          <div className="size-12 mx-auto rounded-2xl bg-white/5 border border-white/10 grid place-items-center mb-4">
-            <Filter className="size-5 text-muted-foreground" />
+      <SmoothLoad
+        isLoading={tasks.isLoading}
+        loadingComponent={
+          <div className="grid gap-3">{Array.from({ length: 5 }).map((_, i) => <Shimmer key={i} className="h-16" />)}</div>
+        }
+      >
+        {items.length === 0 ? (
+          <GlassCard className="text-center py-20">
+            <div className="size-12 mx-auto rounded-2xl bg-white/5 border border-white/10 grid place-items-center mb-4">
+              <Filter className="size-5 text-muted-foreground" />
+            </div>
+            <div className="font-display text-xl">No tasks found</div>
+            <p className="text-sm text-muted-foreground mt-1">Try changing filters or add a new task to this category.</p>
+          </GlassCard>
+        ) : (
+          <div className="grid gap-3">
+            <AnimatePresence initial={false}>
+              {items.map((t) => (
+                <TaskListItem
+                  key={t.id}
+                  task={t}
+                  cat={category}
+                  cats={cats.data ?? []}
+                  onToggle={(tid) => toggle.mutate(tid)}
+                  onDelete={(tid) => delTask.mutate(tid)}
+                  onSave={(tid, payload) => updateTask.mutate({ tid, payload })}
+                  isSaving={updateTask.isPending}
+                />
+              ))}
+            </AnimatePresence>
           </div>
-          <div className="font-display text-xl">No tasks found</div>
-          <p className="text-sm text-muted-foreground mt-1">Try changing filters or add a new task to this category.</p>
-        </GlassCard>
-      ) : (
-        <div className="grid gap-3">
-          <AnimatePresence initial={false}>
-            {items.map((t) => (
-              <TaskListItem
-                key={t.id}
-                task={t}
-                cat={category}
-                cats={cats.data ?? []}
-                onToggle={(tid) => toggle.mutate(tid)}
-                onDelete={(tid) => delTask.mutate(tid)}
-                onSave={(tid, payload) => updateTask.mutate({ tid, payload })}
-                isSaving={updateTask.isPending}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
+        )}
+      </SmoothLoad>
 
       <AnimatePresence>
         {showNew && (

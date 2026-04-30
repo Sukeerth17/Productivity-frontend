@@ -6,6 +6,7 @@ import { Plus, Trash2, Pencil, X, Loader2, Tag, Check } from "lucide-react";
 import { api, type Category } from "@/lib/api";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Shimmer } from "@/components/glass/Skeleton";
+import { SmoothLoad } from "@/components/glass/SmoothLoad";
 import { toast } from "sonner";
 
 const PALETTE = [
@@ -54,76 +55,81 @@ export default function Categories() {
         </motion.button>
       </div>
 
-      {cats.isLoading ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => <Shimmer key={i} className="h-40" />)}
-        </div>
-      ) : (cats.data?.length ?? 0) === 0 ? (
-        <GlassCard className="text-center py-16">
-          <div className="size-14 mx-auto rounded-2xl bg-gradient-primary grid place-items-center shadow-glow mb-4">
-            <Tag className="size-6 text-primary-foreground" />
+      <SmoothLoad
+        isLoading={cats.isLoading}
+        loadingComponent={
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => <Shimmer key={i} className="h-40" />)}
           </div>
-          <div className="font-display text-2xl">No categories yet</div>
-          <p className="text-sm text-muted-foreground mt-1 mb-6">Create your first to start organising tasks.</p>
-          <button onClick={() => setShowNew(true)}
-            className="px-5 py-2.5 rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">Create category</button>
-        </GlassCard>
-      ) : (
-        <motion.div layout className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <AnimatePresence>
-            {cats.data!.map((c) => {
-              const k = counts.get(c.id) ?? { total: 0, done: 0 };
-              const pct = k.total ? Math.round((k.done / k.total) * 100) : 0;
-              return (
-                <motion.div key={c.id} layout
-                  initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
-                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-                  <GlassCard hover className="relative overflow-hidden p-6 cursor-pointer group/card"
-                    onClick={() => navigate(`/categories/${c.id}`)}>
-                    <div className="absolute -top-16 -right-16 size-40 rounded-full opacity-30 blur-2xl"
-                      style={{ background: c.color }} />
-                    <div className="flex items-start justify-between relative">
-                      <div className="flex items-center gap-3">
-                        <div className="size-12 rounded-2xl grid place-items-center shadow-glow group-hover/card:scale-110 transition"
-                          style={{ background: `linear-gradient(135deg, ${c.color}, ${c.color}aa)` }}>
-                          <Tag className="size-5" style={{ color: "hsl(30 25% 8%)" }} />
+        }
+      >
+        {(cats.data?.length ?? 0) === 0 ? (
+          <GlassCard className="text-center py-16">
+            <div className="size-14 mx-auto rounded-2xl bg-gradient-primary grid place-items-center shadow-glow mb-4">
+              <Tag className="size-6 text-primary-foreground" />
+            </div>
+            <div className="font-display text-2xl">No categories yet</div>
+            <p className="text-sm text-muted-foreground mt-1 mb-6">Create your first to start organising tasks.</p>
+            <button onClick={() => setShowNew(true)}
+              className="px-5 py-2.5 rounded-xl bg-gradient-primary text-primary-foreground shadow-glow">Create category</button>
+          </GlassCard>
+        ) : (
+          <motion.div layout className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <AnimatePresence>
+              {cats.data!.map((c) => {
+                const k = counts.get(c.id) ?? { total: 0, done: 0 };
+                const pct = k.total ? Math.round((k.done / k.total) * 100) : 0;
+                return (
+                  <motion.div key={c.id} layout
+                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+                    <GlassCard hover className="relative overflow-hidden p-6 cursor-pointer group/card"
+                      onClick={() => navigate(`/categories/${c.id}`)}>
+                      <div className="absolute -top-16 -right-16 size-40 rounded-full opacity-30 blur-2xl"
+                        style={{ background: c.color }} />
+                      <div className="flex items-start justify-between relative">
+                        <div className="flex items-center gap-3">
+                          <div className="size-12 rounded-2xl grid place-items-center shadow-glow group-hover/card:scale-110 transition"
+                            style={{ background: `linear-gradient(135deg, ${c.color}, ${c.color}aa)` }}>
+                            <Tag className="size-5" style={{ color: "hsl(30 25% 8%)" }} />
+                          </div>
+                          <div>
+                            <div className="font-display text-lg leading-tight group-hover/card:text-primary transition">{c.name}</div>
+                            <div className="text-xs text-muted-foreground">{k.total} task{k.total === 1 ? "" : "s"}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-display text-lg leading-tight group-hover/card:text-primary transition">{c.name}</div>
-                          <div className="text-xs text-muted-foreground">{k.total} task{k.total === 1 ? "" : "s"}</div>
+                        <div className="flex gap-1 relative z-10" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => setEditing(c)}
+                            className="size-9 grid place-items-center rounded-lg hover:bg-white/10 transition" title="Edit">
+                            <Pencil className="size-4" />
+                          </button>
+                          <button onClick={() => del.mutate(c.id)}
+                            className="size-9 grid place-items-center rounded-lg hover:bg-destructive/30 transition" title="Delete">
+                            <Trash2 className="size-4" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex gap-1 relative z-10" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => setEditing(c)}
-                          className="size-9 grid place-items-center rounded-lg hover:bg-white/10 transition" title="Edit">
-                          <Pencil className="size-4" />
-                        </button>
-                        <button onClick={() => del.mutate(c.id)}
-                          className="size-9 grid place-items-center rounded-lg hover:bg-destructive/30 transition" title="Delete">
-                          <Trash2 className="size-4" />
-                        </button>
-                      </div>
-                    </div>
 
-                    <div className="mt-5 relative">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-                        <span>Completion</span><span>{pct}%</span>
+                      <div className="mt-5 relative">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                          <span>Completion</span><span>{pct}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                          <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                            className="h-full rounded-full"
+                            style={{ background: `linear-gradient(90deg, ${c.color}, hsl(38 70% 60%))` }} />
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-2">{k.done} done · {k.total - k.done} active</div>
                       </div>
-                      <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                        <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-                          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-                          className="h-full rounded-full"
-                          style={{ background: `linear-gradient(90deg, ${c.color}, hsl(38 70% 60%))` }} />
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-2">{k.done} done · {k.total - k.done} active</div>
-                    </div>
-                  </GlassCard>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </motion.div>
-      )}
+                    </GlassCard>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </SmoothLoad>
 
       <AnimatePresence>
         {showNew && <CategoryModal onClose={() => setShowNew(false)} />}

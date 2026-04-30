@@ -68,6 +68,11 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
   if (!res.ok) {
+    if (res.status === 401) {
+      localStorage.removeItem("auth_token");
+      sessionStorage.removeItem("auth_token_session");
+      // Optional: window.location.href = "/login";
+    }
     const detail = (data && (data.detail || data.message)) || res.statusText;
     throw new ApiError(res.status, typeof detail === "string" ? detail : JSON.stringify(detail));
   }

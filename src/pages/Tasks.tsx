@@ -6,6 +6,7 @@ import { Plus, Trash2, Loader2, Filter, X, Pencil, Save } from "lucide-react";
 import { api, type Priority, type Task } from "@/lib/api";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Shimmer } from "@/components/glass/Skeleton";
+import { SmoothLoad } from "@/components/glass/SmoothLoad";
 import { TaskListItem } from "@/components/tasks/TaskListItem";
 import { NewTaskModal } from "@/components/tasks/NewTaskModal";
 import { toast } from "sonner";
@@ -108,9 +109,12 @@ export default function Tasks() {
         </div>
       </GlassCard>
 
-      {tasks.isLoading ? (
-        <div className="grid gap-3">{Array.from({ length: 5 }).map((_, i) => <Shimmer key={i} className="h-16" />)}</div>
-      ) : (
+      <SmoothLoad
+        isLoading={tasks.isLoading}
+        loadingComponent={
+          <div className="grid gap-3">{Array.from({ length: 5 }).map((_, i) => <Shimmer key={i} className="h-16" />)}</div>
+        }
+      >
         <div className="grid lg:grid-cols-2 gap-6">
           <Section
             title="Active"
@@ -131,7 +135,7 @@ export default function Tasks() {
             isSaving={update.isPending}
           />
         </div>
-      )}
+      </SmoothLoad>
 
       <AnimatePresence>
         {showNew && <NewTaskModal onClose={() => setShowNew(false)} categories={cats.data ?? []} />}
