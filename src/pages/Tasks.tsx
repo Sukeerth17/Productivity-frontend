@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Loader2, Filter, X } from "lucide-react";
+import { Plus, Trash2, Loader2, Filter, X, Pencil, Save } from "lucide-react";
 import { api, type Priority, type Task } from "@/lib/api";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Shimmer } from "@/components/glass/Skeleton";
@@ -47,6 +47,16 @@ export default function Tasks() {
   const del = useMutation({
     mutationFn: (id: string) => api.deleteTask(id),
     onSuccess: () => { toast.success("Task deleted"); qc.invalidateQueries({ queryKey: ["tasks"] }); },
+  });
+  const update = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof api.updateTask>[1] }) => api.updateTask(id, payload),
+    onSuccess: () => {
+      toast.success("Task updated");
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["productivity"] });
+    },
+    onError: (e: any) => toast.error(e?.message || "Could not update task"),
   });
 
   const grouped = useMemo(() => {
@@ -100,8 +110,24 @@ export default function Tasks() {
         <div className="grid gap-3">{Array.from({ length: 5 }).map((_, i) => <Shimmer key={i} className="h-16" />)}</div>
       ) : (
         <div className="grid lg:grid-cols-2 gap-6">
-          <Section title="Active" items={grouped.active} cats={cats.data ?? []} onToggle={(id) => toggle.mutate(id)} onDelete={(id) => del.mutate(id)} />
-          <Section title="Completed" items={grouped.done} cats={cats.data ?? []} onToggle={(id) => toggle.mutate(id)} onDelete={(id) => del.mutate(id)} />
+          <Section
+            title="Active"
+            items={grouped.active}
+            cats={cats.data ?? []}
+            onToggle={(id) => toggle.mutate(id)}
+            onDelete={(id) => del.mutate(id)}
+            onSave={(id, payload) => update.mutate({ id, payload })}
+            isSaving={update.isPending}
+          />
+          <Section
+            title="Completed"
+            items={grouped.done}
+            cats={cats.data ?? []}
+            onToggle={(id) => toggle.mutate(id)}
+            onDelete={(id) => del.mutate(id)}
+            onSave={(id, payload) => update.mutate({ id, payload })}
+            isSaving={update.isPending}
+          />
         </div>
       )}
 
@@ -121,9 +147,19 @@ function Select({ value, onChange, children }: { value: string; onChange: (v: st
   );
 }
 
-function Section({ title, items, cats, onToggle, onDelete }: {
+function Section({ title, items, cats, onToggle, onDelete, onSave, isSaving }: {
   title: string; items: Task[]; cats: { id: string; name: string; color: string }[];
-  onToggle: (id: string) => void; onDelete: (id: string) => void;
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  onSave: (id: string, payload: {
+    title: string;
+    category_id: string;
+    notes: string | null;
+    priority: Priority | null;
+    due_time: string | null;
+    is_habit: boolean;
+  }) => void;
+  isSaving: boolean;
 }) {
   return (
     <GlassCard>
@@ -139,36 +175,16 @@ function Section({ title, items, cats, onToggle, onDelete }: {
             {items.map((t) => {
               const cat = cats.find((c) => c.id === t.category_id);
               return (
-                <motion.li key={t.id}
-                  layout
-                  initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -8 }}
-                  transition={{ duration: 0.2 }}
-                  className="group glass p-3 flex items-center gap-3 hover:bg-white/[0.07]">
-                  <button
-                    onClick={() => onToggle(t.id)}
-                    className={`size-5 rounded-md border transition ${t.completed ? "bg-gradient-primary border-transparent" : "border-white/20 hover:border-primary"}`}
-                    aria-label="Toggle"
-                  >
-                    {t.completed && <svg viewBox="0 0 24 24" className="size-4 mx-auto text-primary-foreground"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19l12-12-1.4-1.4z"/></svg>}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <div className={`truncate ${t.completed ? "line-through text-muted-foreground" : ""}`}>{t.title}</div>
-                    <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                      {cat && (
-                        <span className="inline-flex items-center gap-1.5">
-                          <span className="size-2 rounded-full" style={{ background: cat.color }} />
-                          {cat.name}
-                        </span>
-                      )}
-                      {t.due_time && <span>• {t.due_time}</span>}
-                      {t.priority && <span className="capitalize">• {t.priority}</span>}
-                    </div>
-                  </div>
-                  <button onClick={() => onDelete(t.id)}
-                    className="opacity-0 group-hover:opacity-100 transition size-8 grid place-items-center rounded-lg hover:bg-destructive/30">
-                    <Trash2 className="size-4" />
-                  </button>
-                </motion.li>
+                <TaskListItem
+                  key={t.id}
+                  task={t}
+                  cat={cat}
+                  cats={cats}
+                  onToggle={onToggle}
+                  onDelete={onDelete}
+                  onSave={onSave}
+                  isSaving={isSaving}
+                />
               );
             })}
           </AnimatePresence>
@@ -176,6 +192,199 @@ function Section({ title, items, cats, onToggle, onDelete }: {
       )}
     </GlassCard>
   );
+}
+
+type EditDraft = {
+  title: string;
+  categoryId: string;
+  notes: string;
+  priority: Priority | "";
+  dueTime: string;
+  taskType: "habit" | "one-off";
+};
+
+function TaskListItem({
+  task,
+  cat,
+  cats,
+  onToggle,
+  onDelete,
+  onSave,
+  isSaving,
+}: {
+  task: Task;
+  cat?: { id: string; name: string; color: string };
+  cats: { id: string; name: string; color: string }[];
+  onToggle: (id: string) => void;
+  onDelete: (id: string) => void;
+  onSave: (id: string, payload: {
+    title: string;
+    category_id: string;
+    notes: string | null;
+    priority: Priority | null;
+    due_time: string | null;
+    is_habit: boolean;
+  }) => void;
+  isSaving: boolean;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState<EditDraft>(() => makeDraft(task));
+
+  useEffect(() => {
+    if (!isEditing) {
+      setDraft(makeDraft(task));
+    }
+  }, [task, isEditing]);
+
+  const handleCancel = () => {
+    setDraft(makeDraft(task));
+    setIsEditing(false);
+  };
+
+  const handleSave = () => {
+    if (!draft.title.trim() || !draft.categoryId) return;
+
+    onSave(task.id, {
+      title: draft.title.trim(),
+      category_id: draft.categoryId,
+      notes: draft.notes.trim() ? draft.notes.trim() : null,
+      priority: draft.priority || null,
+      due_time: draft.dueTime.trim() ? draft.dueTime.trim() : null,
+      is_habit: draft.taskType === "habit",
+    });
+    setIsEditing(false);
+  };
+
+  return (
+    <motion.li
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -8 }}
+      transition={{ duration: 0.2 }}
+      className="group glass p-3 hover:bg-white/[0.07]"
+    >
+      {isEditing ? (
+        <div className="space-y-3">
+          <input
+            autoFocus
+            value={draft.title}
+            onChange={(e) => setDraft((current) => ({ ...current, title: e.target.value }))}
+            placeholder="Task title"
+            className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60"
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <select
+              value={draft.categoryId}
+              onChange={(e) => setDraft((current) => ({ ...current, categoryId: e.target.value }))}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60"
+            >
+              {cats.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+            </select>
+            <select
+              value={draft.taskType}
+              onChange={(e) => setDraft((current) => ({ ...current, taskType: e.target.value as EditDraft["taskType"] }))}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60"
+            >
+              <option value="one-off">One-off task</option>
+              <option value="habit">Habit</option>
+            </select>
+            <select
+              value={draft.priority}
+              onChange={(e) => setDraft((current) => ({ ...current, priority: e.target.value as Priority | "" }))}
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60"
+            >
+              <option value="">No priority</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <input
+              value={draft.dueTime}
+              onChange={(e) => setDraft((current) => ({ ...current, dueTime: e.target.value }))}
+              placeholder="HH:MM"
+              className="px-3 py-2 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60"
+            />
+          </div>
+          <textarea
+            value={draft.notes}
+            onChange={(e) => setDraft((current) => ({ ...current, notes: e.target.value }))}
+            placeholder="Notes (optional)"
+            rows={3}
+            className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 resize-none outline-none focus:border-primary/60"
+          />
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              onClick={handleCancel}
+              className="px-3 py-2 rounded-xl border border-white/10 hover:bg-white/10"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || !draft.title.trim() || !draft.categoryId}
+              className="px-3 py-2 rounded-xl bg-gradient-primary text-primary-foreground disabled:opacity-60 flex items-center gap-2"
+            >
+              {isSaving && <Loader2 className="size-4 animate-spin" />}
+              <Save className="size-4" />
+              Save
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onToggle(task.id)}
+            className={`size-5 rounded-md border transition ${task.completed ? "bg-gradient-primary border-transparent" : "border-white/20 hover:border-primary"}`}
+            aria-label="Toggle"
+          >
+            {task.completed && <svg viewBox="0 0 24 24" className="size-4 mx-auto text-primary-foreground"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19l12-12-1.4-1.4z"/></svg>}
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className={`truncate ${task.completed ? "line-through text-muted-foreground" : ""}`}>{task.title}</div>
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground flex-wrap">
+              {cat && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="size-2 rounded-full" style={{ background: cat.color }} />
+                  {cat.name}
+                </span>
+              )}
+              <span>• {task.is_habit ? "Habit" : "One-off task"}</span>
+              {task.due_time && <span>• {task.due_time}</span>}
+              {task.priority && <span className="capitalize">• {task.priority}</span>}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <button
+              onClick={() => setIsEditing(true)}
+              className="size-8 grid place-items-center rounded-lg hover:bg-white/10 sm:opacity-0 sm:group-hover:opacity-100 transition"
+              aria-label="Edit task"
+            >
+              <Pencil className="size-4" />
+            </button>
+            <button
+              onClick={() => onDelete(task.id)}
+              className="size-8 grid place-items-center rounded-lg hover:bg-destructive/30 sm:opacity-0 sm:group-hover:opacity-100 transition"
+              aria-label="Delete task"
+            >
+              <Trash2 className="size-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    </motion.li>
+  );
+}
+
+function makeDraft(task: Task): EditDraft {
+  return {
+    title: task.title,
+    categoryId: task.category_id,
+    notes: task.notes ?? "",
+    priority: task.priority ?? "",
+    dueTime: task.due_time ?? "",
+    taskType: task.is_habit ? "habit" : "one-off",
+  };
 }
 
 function NewTaskModal({ onClose, categories }: { onClose: () => void; categories: { id: string; name: string }[] }) {
@@ -186,6 +395,7 @@ function NewTaskModal({ onClose, categories }: { onClose: () => void; categories
   const [dueTime, setDueTime] = useState("");
   const [notes, setNotes] = useState("");
   const [newCat, setNewCat] = useState("");
+  const [isHabit, setIsHabit] = useState(false);
   const [askGeneral, setAskGeneral] = useState(false);
 
   const createCat = useMutation({
@@ -201,6 +411,7 @@ function NewTaskModal({ onClose, categories }: { onClose: () => void; categories
       notes: notes || undefined,
       priority: (priority || null) as any,
       due_time: dueTime || null,
+      is_habit: isHabit,
     }),
     onSuccess: () => { toast.success("Task added"); qc.invalidateQueries({ queryKey: ["tasks"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); onClose(); },
     onError: (e: any) => toast.error(e?.message || "Could not create task"),
@@ -224,6 +435,7 @@ function NewTaskModal({ onClose, categories }: { onClose: () => void; categories
         notes: notes || undefined,
         priority: (priority || null) as any,
         due_time: dueTime || null,
+        is_habit: isHabit,
       });
       toast.success("Category 'General' and task added");
       qc.invalidateQueries({ queryKey: ["tasks"] });
@@ -298,6 +510,12 @@ function NewTaskModal({ onClose, categories }: { onClose: () => void; categories
 
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={3}
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 resize-none" />
+
+              <label className="flex items-center gap-2 px-1 cursor-pointer group">
+                <input type="checkbox" checked={isHabit} onChange={(e) => setIsHabit(e.target.checked)}
+                  className="size-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30" />
+                <span className="text-sm text-muted-foreground group-hover:text-foreground transition">Daily Habit (reloads every midnight)</span>
+              </label>
             </div>
             <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.985 }}
               disabled={!title.trim() || (categories.length > 0 && !categoryId) || create.isPending}

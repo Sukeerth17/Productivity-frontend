@@ -83,10 +83,10 @@ export default function Dashboard() {
                     <span className="size-2.5 rounded-full" style={{ background: c.color }} />
                     {c.category_name}
                   </div>
-                  <span className="text-muted-foreground">{Math.round(c.completion_rate * 100)}%</span>
+                  <span className="text-muted-foreground">{Math.round(c.completion_rate)}%</span>
                 </div>
                 <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${Math.round(c.completion_rate * 100)}%` }}
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${Math.round(c.completion_rate)}%` }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     className="h-full rounded-full" style={{ background: c.color }} />
                 </div>

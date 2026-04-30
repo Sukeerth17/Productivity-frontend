@@ -12,6 +12,15 @@ export interface Task {
   completed: boolean; is_habit: boolean; priority: Priority | null; due_time: string | null;
   created_at: string; completed_at: string | null; updated_at: string; subtasks: SubTask[];
 }
+export interface TaskUpdateInput {
+  title?: string;
+  category_id?: string | null;
+  notes?: string | null;
+  completed?: boolean;
+  is_habit?: boolean;
+  priority?: Priority | null;
+  due_time?: string | null;
+}
 export interface PaginatedTasks { items: Task[]; total: number; limit: number; offset: number }
 export interface DashboardStats {
   total_tasks: number; completed_tasks: number; active_tasks: number;
@@ -85,7 +94,7 @@ export const api = {
   deleteCategory: (id: string) => request<void>(`/categories/${id}`, { method: "DELETE" }),
 
   // tasks
-  listTasks: (q: { category_id?: string; completed?: boolean; priority?: Priority; limit?: number; offset?: number } = {}) => {
+  listTasks: (q: { category_id?: string; completed?: boolean; priority?: Priority; search?: string; limit?: number; offset?: number } = {}) => {
     const p = new URLSearchParams();
     Object.entries(q).forEach(([k, v]) => v !== undefined && v !== null && v !== "" && p.append(k, String(v)));
     const qs = p.toString();
@@ -93,7 +102,7 @@ export const api = {
   },
   createTask: (b: { title: string; category_id: string; notes?: string; priority?: Priority | null; due_time?: string | null; is_habit?: boolean }) =>
     request<Task>("/tasks", { method: "POST", body: JSON.stringify(b) }),
-  updateTask: (id: string, b: Partial<Task>) =>
+  updateTask: (id: string, b: TaskUpdateInput) =>
     request<Task>(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(b) }),
   deleteTask: (id: string) => request<void>(`/tasks/${id}`, { method: "DELETE" }),
   toggleTask: (id: string) => request<Task>(`/tasks/${id}/toggle`, { method: "POST" }),
