@@ -16,6 +16,7 @@ export default function Auth({ mode }: { mode: "login" | "signup" }) {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [isResetMode, setIsResetMode] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const isSignup = mode === "signup";
 
   async function onSubmit(e: React.FormEvent) {
@@ -33,7 +34,7 @@ export default function Auth({ mode }: { mode: "login" | "signup" }) {
         const res = isSignup
           ? await api.signup(form)
           : await api.login({ email: form.email, password: form.password });
-        setAuth(res.token, res.user);
+        setAuth(res.token, res.user, rememberMe);
         toast.success(isSignup ? "Welcome aboard!" : "Welcome back!");
         nav((loc.state as any)?.from || "/", { replace: true });
       }
@@ -138,7 +139,12 @@ export default function Auth({ mode }: { mode: "login" | "signup" }) {
           </Field>
 
           {!isSignup && (
-            <div className="text-right">
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}
+                  className="size-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30" />
+                <span className="text-xs text-muted-foreground group-hover:text-foreground transition">Remember me</span>
+              </label>
               <button type="button" onClick={() => setIsResetMode(!isResetMode)} className="text-xs text-primary/80 hover:underline">
                 {isResetMode ? "Back to login" : "Forgot or change password?"}
               </button>
