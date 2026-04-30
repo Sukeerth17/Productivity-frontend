@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Pencil, X, Loader2, Tag, Check } from "lucide-react";
 import { api, type Category } from "@/lib/api";
@@ -16,6 +17,7 @@ const ICONS = ["star", "tag", "briefcase", "heart", "book", "leaf", "flame", "co
 
 export default function Categories() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const cats = useQuery({ queryKey: ["categories"], queryFn: api.listCategories });
   const tasks = useQuery({ queryKey: ["tasks", "all-for-cats"], queryFn: () => api.listTasks({ limit: 200 }) });
   const [showNew, setShowNew] = useState(false);
@@ -76,21 +78,22 @@ export default function Categories() {
                 <motion.div key={c.id} layout
                   initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-                  <GlassCard hover className="relative overflow-hidden p-6">
+                  <GlassCard hover className="relative overflow-hidden p-6 cursor-pointer group/card"
+                    onClick={() => navigate(`/categories/${c.id}`)}>
                     <div className="absolute -top-16 -right-16 size-40 rounded-full opacity-30 blur-2xl"
                       style={{ background: c.color }} />
                     <div className="flex items-start justify-between relative">
                       <div className="flex items-center gap-3">
-                        <div className="size-12 rounded-2xl grid place-items-center shadow-glow"
+                        <div className="size-12 rounded-2xl grid place-items-center shadow-glow group-hover/card:scale-110 transition"
                           style={{ background: `linear-gradient(135deg, ${c.color}, ${c.color}aa)` }}>
                           <Tag className="size-5" style={{ color: "hsl(30 25% 8%)" }} />
                         </div>
                         <div>
-                          <div className="font-display text-lg leading-tight">{c.name}</div>
+                          <div className="font-display text-lg leading-tight group-hover/card:text-primary transition">{c.name}</div>
                           <div className="text-xs text-muted-foreground">{k.total} task{k.total === 1 ? "" : "s"}</div>
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 relative z-10" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => setEditing(c)}
                           className="size-9 grid place-items-center rounded-lg hover:bg-white/10 transition" title="Edit">
                           <Pencil className="size-4" />

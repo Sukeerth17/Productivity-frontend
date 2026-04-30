@@ -11,6 +11,7 @@ const Tasks = lazy(() => import("@/pages/Tasks"));
 const Insights = lazy(() => import("@/pages/Insights"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const Categories = lazy(() => import("@/pages/Categories"));
+const CategoryDetail = lazy(() => import("@/pages/CategoryDetail"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 import { AppShell } from "@/components/layout/AppShell";
@@ -48,6 +49,7 @@ const App = () => (
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/tasks" element={<Tasks />} />
                   <Route path="/categories" element={<Categories />} />
+                  <Route path="/categories/:id" element={<CategoryDetail />} />
                   <Route path="/insights" element={<Insights />} />
                   <Route path="/settings" element={<Settings />} />
                 </Route>
