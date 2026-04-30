@@ -171,16 +171,3 @@ function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: st
   );
 }
 
-function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: React.ReactNode; accent?: boolean }) {
-  return (
-    <GlassCard hover className="p-5">
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">{label}</div>
-        <div className={`size-9 rounded-xl grid place-items-center ${accent ? "bg-gradient-primary text-primary-foreground shadow-glow" : "bg-white/5 border border-white/10"}`}>
-          {icon}
-        </div>
-      </div>
-      <div className="font-display text-3xl mt-3">{value}</div>
-    </GlassCard>
-  );
-}
