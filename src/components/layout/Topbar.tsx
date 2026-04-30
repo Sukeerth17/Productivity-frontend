@@ -66,7 +66,7 @@ export function Topbar() {
           </div>
           <motion.button whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.94 }}
             onClick={() => { logout(); nav("/login"); }}
-            className="hidden sm:grid size-10 rounded-xl bg-white/5 border border-white/10 place-items-center hover:bg-destructive/30"
+            className="grid size-10 rounded-xl bg-white/5 border border-white/10 place-items-center hover:bg-destructive/30"
             title="Log out">
             <LogOut className="size-4" />
           </motion.button>
