@@ -33,10 +33,30 @@ export default function CategoryDetail() {
 
   const toggle = useMutation({
     mutationFn: (tid: string) => api.toggleTask(tid),
-    onSuccess: () => { 
-      qc.invalidateQueries({ queryKey: ["tasks"] }); 
-      qc.invalidateQueries({ queryKey: ["dashboard"] }); 
-      qc.invalidateQueries({ queryKey: ["productivity"] }); 
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ["tasks"] });
+      const previousTasks = qc.getQueriesData({ queryKey: ["tasks"] });
+      
+      qc.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
+        if (!old || !old.items) return old;
+        return {
+          ...old,
+          items: old.items.map((t: any) => t.id === id ? { ...t, completed: !t.completed } : t)
+        };
+      });
+      return { previousTasks };
+    },
+    onError: (err, newTodo, context) => {
+      if (context?.previousTasks) {
+        context.previousTasks.forEach(([queryKey, data]) => {
+          qc.setQueryData(queryKey, data);
+        });
+      }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["productivity"] });
     },
   });
 

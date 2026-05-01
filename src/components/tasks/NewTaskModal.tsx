@@ -39,14 +39,44 @@ export function NewTaskModal({
       due_time: dueTime || null,
       is_habit: isHabit,
     }),
-    onSuccess: () => { 
-      toast.success("Task added"); 
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["tasks"] });
+      const previousTasks = qc.getQueriesData({ queryKey: ["tasks"] });
+      const tempId = `temp-${Date.now()}`;
+      
+      qc.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
+        if (!old || !old.items) return old;
+        return {
+          ...old,
+          items: [{ 
+            id: tempId, 
+            title: title.trim(), 
+            category_id: categoryId, 
+            notes, 
+            priority, 
+            due_time: dueTime, 
+            is_habit: isHabit, 
+            completed: false, 
+            created_at: new Date().toISOString() 
+          }, ...old.items],
+          total: (old.total || 0) + 1
+        };
+      });
+      onClose(); // Instantly close modal
+      return { previousTasks };
+    },
+    onError: (e: any, variables, context) => { 
+      toast.error(e?.message || "Could not create task"); 
+      if (context?.previousTasks) {
+        context.previousTasks.forEach(([queryKey, data]) => qc.setQueryData(queryKey, data));
+      }
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ["tasks"] }); 
       qc.invalidateQueries({ queryKey: ["dashboard"] }); 
       qc.invalidateQueries({ queryKey: ["productivity"] });
-      onClose(); 
     },
-    onError: (e: any) => toast.error(e?.message || "Could not create task"),
+    onSuccess: () => { toast.success("Task added"); },
   });
 
   const handleCreate = async () => {

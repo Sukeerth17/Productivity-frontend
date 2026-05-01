@@ -36,8 +36,15 @@ export default function Categories() {
 
   const del = useMutation({
     mutationFn: (id: string) => api.deleteCategory(id),
-    onSuccess: () => { toast.success("Category deleted"); qc.invalidateQueries({ queryKey: ["categories"] }); qc.invalidateQueries({ queryKey: ["tasks"] }); },
-    onError: (e: any) => toast.error(e?.message || "Could not delete"),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ["categories"] });
+      const previous = qc.getQueryData(["categories"]);
+      qc.setQueryData(["categories"], (old: any) => old?.filter((c: any) => c.id !== id));
+      return { previous };
+    },
+    onError: (e: any, id, context) => { toast.error(e?.message || "Could not delete"); qc.setQueryData(["categories"], context?.previous); },
+    onSettled: () => { qc.invalidateQueries({ queryKey: ["categories"] }); qc.invalidateQueries({ queryKey: ["tasks"] }); },
+    onSuccess: () => { toast.success("Category deleted"); },
   });
 
   return (
@@ -147,13 +154,31 @@ function CategoryModal({ onClose, initial }: { onClose: () => void; initial?: Ca
 
   const create = useMutation({
     mutationFn: () => api.createCategory({ name: name.trim(), color, icon }),
-    onSuccess: () => { toast.success("Category created"); qc.invalidateQueries({ queryKey: ["categories"] }); onClose(); },
-    onError: (e: any) => toast.error(e?.message || "Could not create"),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["categories"] });
+      const previous = qc.getQueryData(["categories"]);
+      const tempId = `temp-${Date.now()}`;
+      qc.setQueryData(["categories"], (old: any) => [...(old || []), { id: tempId, name: name.trim(), color, icon, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }]);
+      onClose(); // close modal instantly
+      return { previous };
+    },
+    onError: (e: any, variables, context) => { toast.error(e?.message || "Could not create"); qc.setQueryData(["categories"], context?.previous); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+    onSuccess: () => { toast.success("Category created"); },
   });
+  
   const update = useMutation({
     mutationFn: () => api.updateCategory(initial!.id, { name: name.trim(), color, icon }),
-    onSuccess: () => { toast.success("Category updated"); qc.invalidateQueries({ queryKey: ["categories"] }); onClose(); },
-    onError: (e: any) => toast.error(e?.message || "Could not update"),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ["categories"] });
+      const previous = qc.getQueryData(["categories"]);
+      qc.setQueryData(["categories"], (old: any) => old?.map((c: any) => c.id === initial!.id ? { ...c, name: name.trim(), color, icon } : c));
+      onClose();
+      return { previous };
+    },
+    onError: (e: any, variables, context) => { toast.error(e?.message || "Could not update"); qc.setQueryData(["categories"], context?.previous); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+    onSuccess: () => { toast.success("Category updated"); },
   });
 
   const isEdit = !!initial;

@@ -19,6 +19,7 @@ export function SmoothLoad({ isLoading, loadingComponent, children, className }:
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: "easeInOut" }}
+            className="h-full w-full"
           >
             {loadingComponent}
           </motion.div>
@@ -32,6 +33,7 @@ export function SmoothLoad({ isLoading, loadingComponent, children, className }:
               ease: [0.22, 1, 0.36, 1],
               filter: { duration: 0.4 }
             }}
+            className="h-full w-full"
           >
             {children}
           </motion.div>

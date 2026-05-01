@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
@@ -6,7 +7,7 @@ import { Shimmer } from "@/components/glass/Skeleton";
 import { SmoothLoad } from "@/components/glass/SmoothLoad";
 import { useAuth } from "@/store/auth";
 import { CheckCircle2, ListTodo, Flame, Target, Calendar } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip, CartesianGrid } from "recharts";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export default function Dashboard() {
   const user = useAuth((s) => s.user);
@@ -16,17 +17,31 @@ export default function Dashboard() {
   const tasks = useQuery({ queryKey: ["tasks", "recent"], queryFn: () => api.listTasks({ limit: 6 }) });
 
   const loadingStats = dash.isLoading || hist.isLoading;
+  const [range, setRange] = React.useState<"week" | "month" | "all">("all");
   const loadingCharts = prod.isLoading;
   const loadingTasks = tasks.isLoading;
 
-  const trend = prod.data
-    ? [
-        { name: "Day", rate: Math.round(prod.data.day_completion_rate) },
-        { name: "Week", rate: Math.round(prod.data.week_completion_rate) },
-        { name: "Month", rate: Math.round(prod.data.month_completion_rate) },
-        { name: "All-time", rate: Math.round(prod.data.alltime_completion_rate) },
-      ]
-    : [];
+  const trendData = React.useMemo(() => {
+    const raw = prod.data?.trend || [];
+    
+    // Helper to pad the array with zero-rate days if it's too short
+    const padData = (data: typeof raw, targetLength: number) => {
+      if (data.length >= targetLength) return data.slice(-targetLength);
+      const padded = [...data];
+      const earliestDate = padded.length > 0 ? new Date(padded[0].date + " 2026") : new Date(); // Using 2026 as arbitrary year for parsing 'Apr 25'
+      
+      while (padded.length < targetLength) {
+        earliestDate.setDate(earliestDate.getDate() - 1);
+        const dateStr = earliestDate.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+        padded.unshift({ date: dateStr, rate: 0 });
+      }
+      return padded;
+    };
+
+    if (range === "week") return padData(raw, 7);
+    if (range === "month") return padData(raw, 30);
+    return raw;
+  }, [prod.data, range]);
 
   return (
     <div className="space-y-6">
@@ -53,30 +68,67 @@ export default function Dashboard() {
 
       <div className="grid lg:grid-cols-3 gap-4">
         <GlassCard className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <div className="text-sm text-muted-foreground">Completion rate</div>
               <div className="font-display text-2xl">Trend overview</div>
             </div>
-            <div className="text-xs text-muted-foreground">Updated just now</div>
+            <div className="flex gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
+              {(["week", "month", "all"] as const).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={`px-3 py-1 text-xs rounded-md transition-all ${
+                    range === r ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-white/5 text-muted-foreground"
+                  }`}
+                >
+                  {r.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="h-64">
             <SmoothLoad
+              className="h-full w-full"
               isLoading={loadingCharts}
               loadingComponent={<Shimmer className="h-full" />}
             >
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trend}>
+                <AreaChart data={trendData}>
                   <defs>
                     <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
                       <stop offset="0%" stopColor="hsl(38 70% 60%)" stopOpacity={0.7} />
                       <stop offset="100%" stopColor="hsl(42 85% 72%)" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--glass-border)/0.1)" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border)/0.2)", borderRadius: 12 }} />
-                  <Area type="monotone" dataKey="rate" stroke="hsl(38 70% 60%)" fill="url(#g1)" strokeWidth={2} />
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--glass-border)/0.1)" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="hsl(var(--muted-foreground))" 
+                    tick={{ fontSize: 10 }} 
+                    axisLine={false}
+                    tickLine={false}
+                    dy={10}
+                  />
+                  <YAxis hide domain={[0, 100]} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: "hsl(var(--popover))", 
+                      border: "1px solid hsl(var(--border)/0.2)", 
+                      borderRadius: 12,
+                      fontSize: 12
+                    }} 
+                    formatter={(val: number) => [`${val}%`, "Rate"]}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="rate" 
+                    stroke="hsl(var(--primary))" 
+                    fill="url(#g1)" 
+                    strokeWidth={3} 
+                    dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4, stroke: "hsl(var(--background))" }}
+                    activeDot={{ r: 6, strokeWidth: 0, fill: "hsl(var(--primary))" }}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </SmoothLoad>
