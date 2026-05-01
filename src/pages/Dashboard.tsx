@@ -68,7 +68,7 @@ export default function Dashboard() {
 
       <div className="grid lg:grid-cols-3 gap-4">
         <GlassCard className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <div className="text-sm text-muted-foreground">Completion rate</div>
               <div className="font-display text-2xl">Trend overview</div>
