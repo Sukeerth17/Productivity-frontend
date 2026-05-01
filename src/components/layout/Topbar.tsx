@@ -1,4 +1,5 @@
-import { Bell, Search, LogOut, Sun, Moon, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Bell, Search, LogOut, Sun, Moon, Sparkles, X } from "lucide-react";
 import { useAuth } from "@/store/auth";
 import { useTheme } from "@/store/theme";
 import { motion, AnimatePresence } from "framer-motion";
