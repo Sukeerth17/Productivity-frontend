@@ -144,11 +144,17 @@ export function NewTaskModal({
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes (optional)" rows={3}
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 resize-none" />
 
-              <label className="flex items-center gap-2 px-1 cursor-pointer group">
-                <input type="checkbox" checked={isHabit} onChange={(e) => setIsHabit(e.target.checked)}
-                  className="size-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30" />
-                <span className="text-sm text-muted-foreground group-hover:text-foreground transition">Daily Habit (reloads every midnight)</span>
-              </label>
+              <div className="space-y-1.5">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Task Type</div>
+                <select 
+                  value={isHabit ? "habit" : "one-off"} 
+                  onChange={(e) => setIsHabit(e.target.value === "habit")}
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60 transition appearance-none"
+                >
+                  <option value="one-off">One-off Task (stays until done)</option>
+                  <option value="habit">Daily Habit (resets every midnight)</option>
+                </select>
+              </div>
             </div>
             <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.985 }}
               disabled={!title.trim() || (categories.length > 0 && !categoryId) || create.isPending}
