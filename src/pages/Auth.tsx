@@ -142,7 +142,7 @@ export default function Auth({ mode }: { mode: "login" | "signup" }) {
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer group">
                 <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}
-                  className="size-4 rounded border-white/20 bg-white/5 text-primary focus:ring-primary/30" />
+                  className="size-4 rounded border-foreground/20 bg-white/5 text-primary focus:ring-primary/30" />
                 <span className="text-xs text-muted-foreground group-hover:text-foreground transition">Remember me</span>
               </label>
               <button type="button" onClick={() => setIsResetMode(!isResetMode)} className="text-xs text-primary/80 hover:underline">
