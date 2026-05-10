@@ -22,6 +22,7 @@ export function NewTaskModal({
   const [notes, setNotes] = useState("");
   const [newCat, setNewCat] = useState("");
   const [isHabit, setIsHabit] = useState(false);
+  const [startDate, setStartDate] = useState("");
   const [askGeneral, setAskGeneral] = useState(false);
 
   const createCat = useMutation({
@@ -38,6 +39,7 @@ export function NewTaskModal({
       priority: (priority || null) as any,
       due_time: dueTime || null,
       is_habit: isHabit,
+      start_date: startDate || null,
     }),
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["tasks"] });
@@ -98,6 +100,7 @@ export function NewTaskModal({
         priority: (priority || null) as any,
         due_time: dueTime || null,
         is_habit: isHabit,
+        start_date: startDate || null,
       });
       toast.success("Category 'General' and task added");
       qc.invalidateQueries({ queryKey: ["tasks"] });
@@ -184,6 +187,19 @@ export function NewTaskModal({
                   <option value="one-off">One-off Task (stays until done)</option>
                   <option value="habit">Daily Habit (resets every midnight)</option>
                 </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Start Date <span className="normal-case text-muted-foreground/60">(optional — task hidden until this date)</span></div>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60 transition"
+                />
+                {startDate && new Date(startDate) > new Date(new Date().toDateString()) && (
+                  <p className="text-xs text-primary/80 ml-1">⏰ This task will appear on {new Date(startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                )}
               </div>
             </div>
             <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.985 }}

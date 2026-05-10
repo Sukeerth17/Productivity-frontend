@@ -10,6 +10,7 @@ type EditDraft = {
   priority: Priority | "";
   dueTime: string;
   taskType: "habit" | "one-off";
+  startDate: string;
 };
 
 function makeDraft(task: Task): EditDraft {
@@ -20,6 +21,7 @@ function makeDraft(task: Task): EditDraft {
     priority: task.priority ?? "",
     dueTime: task.due_time ?? "",
     taskType: task.is_habit ? "habit" : "one-off",
+    startDate: task.start_date ?? "",
   };
 }
 
@@ -71,6 +73,7 @@ export function TaskListItem({
       priority: draft.priority || null,
       due_time: draft.dueTime.trim() ? draft.dueTime.trim() : null,
       is_habit: draft.taskType === "habit",
+      start_date: draft.startDate || null,
     });
     setIsEditing(false);
   };
@@ -133,6 +136,15 @@ export function TaskListItem({
             rows={3}
             className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 resize-none outline-none focus:border-primary/60"
           />
+          <div className="space-y-1">
+            <div className="text-xs text-muted-foreground">Start Date</div>
+            <input
+              type="date"
+              value={draft.startDate}
+              onChange={(e) => setDraft((c) => ({ ...c, startDate: e.target.value }))}
+              className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60"
+            />
+          </div>
           <div className="flex flex-wrap justify-end gap-2">
             <button
               onClick={handleCancel}
@@ -172,6 +184,11 @@ export function TaskListItem({
               <span>• {task.is_habit ? "Habit" : "One-off task"}</span>
               {task.due_time && <span>• {task.due_time}</span>}
               {task.priority && <span className="capitalize">• {task.priority}</span>}
+              {task.start_date && new Date(task.start_date) > new Date(new Date().toDateString()) && (
+                <span className="inline-flex items-center gap-1 text-primary/80 font-medium">
+                  • ⏰ Starts {new Date(task.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
