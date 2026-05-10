@@ -10,6 +10,13 @@ import { SmoothLoad } from "@/components/glass/SmoothLoad";
 import { TaskListItem } from "@/components/tasks/TaskListItem";
 import { NewTaskModal } from "@/components/tasks/NewTaskModal";
 import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const PRIORITIES: (Priority | "all")[] = ["all", "low", "medium", "high"];
 
@@ -105,31 +112,77 @@ export default function Tasks() {
         </motion.button>
       </div>
 
-      <GlassCard className="p-4">
-        <div className="flex flex-wrap gap-2 items-center text-sm">
-          <input
-            value={searchFilter}
-            onChange={(e) => {
-              searchParams.set("search", e.target.value);
-              setSearchParams(searchParams, { replace: true });
-            }}
-            placeholder="Search tasks..."
-            className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60 transition text-sm flex-1 sm:max-w-xs"
-          />
-          <span className="hidden sm:inline text-white/30">|</span>
-          <Filter className="size-4 text-muted-foreground" />
-          <Select value={filterCat} onChange={setFilterCat}>
-            <option value="">All categories</option>
-            {cats.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </Select>
-          <Select value={filterPriority} onChange={(v) => setFilterPriority(v as Priority | "all")}>
-            {PRIORITIES.map((p) => <option key={p} value={p}>{p === "all" ? "Any priority" : p}</option>)}
-          </Select>
-          <Select value={filterStatus} onChange={(v) => setFilterStatus(v as any)}>
-            <option value="all">All status</option>
-            <option value="active">Active</option>
-            <option value="done">Completed</option>
-          </Select>
+      <GlassCard className="p-4 overflow-visible border-white/5 bg-white/[0.02]">
+        <div className="flex flex-wrap gap-4 items-center text-sm">
+          <div className="relative flex-1 sm:max-w-xs group">
+            <input
+              value={searchFilter}
+              onChange={(e) => {
+                searchParams.set("search", e.target.value);
+                setSearchParams(searchParams, { replace: true });
+              }}
+              placeholder="Search tasks..."
+              className="w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60 focus:bg-white/[0.08] transition-all duration-300 text-sm placeholder:text-white/20"
+            />
+          </div>
+          
+          <div className="flex flex-wrap gap-2 items-center">
+            <Filter className="size-3.5 text-white/40 mr-1" />
+            
+            <Select value={filterCat || "all"} onValueChange={(v) => setFilterCat(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[160px] rounded-xl bg-white/5 border-white/10 hover:bg-white/10 transition-colors h-9 text-xs">
+                <SelectValue placeholder="All categories" />
+              </SelectTrigger>
+              <SelectContent className="glass-strong border-white/10">
+                <SelectItem value="all">All categories</SelectItem>
+                {cats.data?.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterPriority} onValueChange={(v) => setFilterPriority(v as Priority | "all")}>
+              <SelectTrigger className="w-[130px] rounded-xl bg-white/5 border-white/10 hover:bg-white/10 transition-colors h-9 text-xs capitalize">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent className="glass-strong border-white/10">
+                {PRIORITIES.map((p) => (
+                  <SelectItem key={p} value={p} className="capitalize">
+                    {p === "all" ? "Any priority" : p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
+              <SelectTrigger className="w-[130px] rounded-xl bg-white/5 border-white/10 hover:bg-white/10 transition-colors h-9 text-xs">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="glass-strong border-white/10">
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="done">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {(filterCat || filterPriority !== "all" || filterStatus !== "all" || searchFilter) && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={() => {
+                  setFilterCat("");
+                  setFilterPriority("all");
+                  setFilterStatus("all");
+                  searchParams.delete("search");
+                  setSearchParams(searchParams);
+                }}
+                className="p-2 rounded-xl hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                title="Clear filters"
+              >
+                <X className="size-4" />
+              </motion.button>
+            )}
+          </div>
         </div>
       </GlassCard>
 
@@ -168,14 +221,6 @@ export default function Tasks() {
   );
 }
 
-function Select({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
-  return (
-    <select value={value} onChange={(e) => onChange(e.target.value)}
-      className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 outline-none focus:border-primary/60">
-      {children}
-    </select>
-  );
-}
 
 function Section({ title, items, cats, onToggle, onDelete, onSave, isSaving }: {
   title: string; items: Task[]; cats: { id: string; name: string; color: string }[];
