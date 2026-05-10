@@ -23,7 +23,13 @@ export function NewTaskModal({
   const [newCat, setNewCat] = useState("");
   const [isHabit, setIsHabit] = useState(false);
   const [startDate, setStartDate] = useState("");
+  const [habitSchedule, setHabitSchedule] = useState<"daily" | "specific">("daily");
+  const [habitDays, setHabitDays] = useState<number[]>([]);
   const [askGeneral, setAskGeneral] = useState(false);
+
+  const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const toggleDay = (d: number) => setHabitDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
+  const resolvedHabitDays = isHabit && habitSchedule === "specific" && habitDays.length > 0 ? habitDays : null;
 
   const createCat = useMutation({
     mutationFn: () => api.createCategory({ name: newCat.trim() }),
@@ -40,6 +46,7 @@ export function NewTaskModal({
       due_time: dueTime || null,
       is_habit: isHabit,
       start_date: startDate || null,
+      habit_days: resolvedHabitDays,
     }),
     onMutate: async () => {
       await qc.cancelQueries({ queryKey: ["tasks"] });
@@ -101,6 +108,7 @@ export function NewTaskModal({
         due_time: dueTime || null,
         is_habit: isHabit,
         start_date: startDate || null,
+        habit_days: resolvedHabitDays,
       });
       toast.success("Category 'General' and task added");
       qc.invalidateQueries({ queryKey: ["tasks"] });
@@ -188,6 +196,26 @@ export function NewTaskModal({
                   <option value="habit">Daily Habit (resets every midnight)</option>
                 </select>
               </div>
+
+              {isHabit && (
+                <div className="space-y-2">
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Repeat Schedule</div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setHabitSchedule("daily")}
+                      className={`flex-1 px-3 py-2 rounded-xl text-sm border transition ${habitSchedule === "daily" ? "bg-gradient-primary text-primary-foreground border-transparent shadow-glow" : "bg-white/5 border-white/10 hover:bg-white/10"}`}>Every day</button>
+                    <button type="button" onClick={() => setHabitSchedule("specific")}
+                      className={`flex-1 px-3 py-2 rounded-xl text-sm border transition ${habitSchedule === "specific" ? "bg-gradient-primary text-primary-foreground border-transparent shadow-glow" : "bg-white/5 border-white/10 hover:bg-white/10"}`}>Specific days</button>
+                  </div>
+                  {habitSchedule === "specific" && (
+                    <div className="flex gap-1.5 flex-wrap">
+                      {DAY_LABELS.map((label, i) => (
+                        <button key={i} type="button" onClick={() => toggleDay(i)}
+                          className={`px-3 py-1.5 rounded-lg text-xs border transition ${habitDays.includes(i) ? "bg-gradient-primary text-primary-foreground border-transparent shadow-glow" : "bg-white/5 border-white/10 hover:bg-white/10"}`}>{label}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <div className="text-xs uppercase tracking-wider text-muted-foreground ml-1">Start Date <span className="normal-case text-muted-foreground/60">(optional — task hidden until this date)</span></div>

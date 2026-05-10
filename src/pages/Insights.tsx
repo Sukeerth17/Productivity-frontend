@@ -36,8 +36,8 @@ export default function Insights() {
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }} />
                 <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }} />
                 <Tooltip cursor={false} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border)/0.2)", borderRadius: 12 }} />
-                <Bar dataKey="total" radius={[8, 8, 0, 0]} fill="hsl(30 12% 22%)" />
-                <Bar dataKey="completed" radius={[8, 8, 0, 0]} fill="hsl(38 70% 60%)" />
+                <Bar dataKey="total" radius={[8, 8, 0, 0]} fill="hsl(var(--chart-1))" />
+                <Bar dataKey="completed" radius={[8, 8, 0, 0]} fill="hsl(var(--chart-2))" />
               </BarChart>
             </ResponsiveContainer>
           )}

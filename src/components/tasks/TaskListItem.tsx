@@ -11,6 +11,7 @@ type EditDraft = {
   dueTime: string;
   taskType: "habit" | "one-off";
   startDate: string;
+  habitDays: number[];
 };
 
 function makeDraft(task: Task): EditDraft {
@@ -22,6 +23,7 @@ function makeDraft(task: Task): EditDraft {
     dueTime: task.due_time ?? "",
     taskType: task.is_habit ? "habit" : "one-off",
     startDate: task.start_date ?? "",
+    habitDays: task.habit_days ?? [],
   };
 }
 
@@ -74,6 +76,7 @@ export function TaskListItem({
       due_time: draft.dueTime.trim() ? draft.dueTime.trim() : null,
       is_habit: draft.taskType === "habit",
       start_date: draft.startDate || null,
+      habit_days: draft.taskType === "habit" ? (draft.habitDays.length > 0 ? draft.habitDays : null) : null,
     });
     setIsEditing(false);
   };
@@ -145,6 +148,34 @@ export function TaskListItem({
               className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60"
             />
           </div>
+
+          {draft.taskType === "habit" && (
+            <div className="space-y-1.5">
+              <div className="text-xs text-muted-foreground">Habit Schedule</div>
+              <div className="flex gap-1 flex-wrap">
+                {["M", "T", "W", "T", "F", "S", "S"].map((label, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setDraft(d => ({
+                      ...d,
+                      habitDays: d.habitDays.includes(i) ? d.habitDays.filter(x => x !== i) : [...d.habitDays, i]
+                    }))}
+                    className={`size-8 rounded-lg text-[10px] border transition ${
+                      draft.habitDays.includes(i) 
+                        ? "bg-primary text-primary-foreground border-transparent" 
+                        : "bg-white/5 border-white/10"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="text-[10px] text-muted-foreground italic">
+                {draft.habitDays.length === 0 ? "Repeats daily" : "Repeats on selected days"}
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap justify-end gap-2">
             <button
               onClick={handleCancel}
@@ -187,6 +218,11 @@ export function TaskListItem({
               {task.start_date && new Date(task.start_date) > new Date(new Date().toDateString()) && (
                 <span className="inline-flex items-center gap-1 text-primary/80 font-medium">
                   • ⏰ Starts {new Date(task.start_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+              )}
+              {task.is_habit && task.habit_days && task.habit_days.length > 0 && (
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  • 🔄 {task.habit_days.map(d => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][d]).join(", ")}
                 </span>
               )}
             </div>

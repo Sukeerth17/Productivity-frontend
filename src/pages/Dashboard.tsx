@@ -97,8 +97,8 @@ export default function Dashboard() {
                 <AreaChart data={trendData}>
                   <defs>
                     <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(38 70% 60%)" stopOpacity={0.7} />
-                      <stop offset="100%" stopColor="hsl(42 85% 72%)" stopOpacity={0.05} />
+                      <stop offset="0%" stopColor="hsl(var(--chart-2))" stopOpacity={0.7} />
+                      <stop offset="100%" stopColor="hsl(var(--background))" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--glass-border)/0.1)" />
