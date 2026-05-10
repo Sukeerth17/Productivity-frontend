@@ -155,7 +155,7 @@ export function TaskListItem({
         <div className="flex items-center gap-3">
           <button
             onClick={() => onToggle(task.id)}
-            className={`size-5 rounded-md border transition ${task.completed ? "bg-gradient-primary border-transparent" : "border-white/20 hover:border-primary"}`}
+            className={`size-5 rounded-md border transition ${task.completed ? "bg-gradient-primary border-transparent" : "border-foreground/20 hover:border-primary"}`}
             aria-label="Toggle"
           >
             {task.completed && <svg viewBox="0 0 24 24" className="size-4 mx-auto text-primary-foreground"><path fill="currentColor" d="M9 16.2 4.8 12l-1.4 1.4L9 19l12-12-1.4-1.4z"/></svg>}
