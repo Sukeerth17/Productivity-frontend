@@ -2,8 +2,9 @@ import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Pencil, Trash2, Plus, Tag, Loader2, Filter } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Plus, Loader2, Filter } from "lucide-react";
 import { api, type Priority, type Task, type Category } from "@/lib/api";
+import { CategoryIcon } from "@/lib/icons";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Shimmer } from "@/components/glass/Skeleton";
 import { SmoothLoad } from "@/components/glass/SmoothLoad";
@@ -122,7 +123,7 @@ export default function CategoryDetail() {
             <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-5">
                 <div className="size-16 rounded-3xl grid place-items-center shadow-glow-lg" style={{ background: `linear-gradient(135deg, ${category.color}, ${category.color}aa)` }}>
-                  <Tag className="size-8" style={{ color: "hsl(30 25% 8%)" }} />
+                  <CategoryIcon name={category.icon} className="size-8" style={{ color: "hsl(30 25% 8%)" }} />
                 </div>
                 <div>
                   <h1 className="font-display text-3xl md:text-4xl">{category.name}</h1>

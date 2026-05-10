@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Pencil, X, Loader2, Tag, Check } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Loader2, Check } from "lucide-react";
 import { api, type Category } from "@/lib/api";
+import { CategoryIcon } from "@/lib/icons";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Shimmer } from "@/components/glass/Skeleton";
 import { SmoothLoad } from "@/components/glass/SmoothLoad";
@@ -98,7 +99,7 @@ export default function Categories() {
                         <div className="flex items-center gap-3">
                           <div className="size-12 rounded-2xl grid place-items-center shadow-glow group-hover/card:scale-110 transition"
                             style={{ background: `linear-gradient(135deg, ${c.color}, ${c.color}aa)` }}>
-                            <Tag className="size-5" style={{ color: "hsl(30 25% 8%)" }} />
+                            <CategoryIcon name={c.icon} className="size-5" style={{ color: "hsl(30 25% 8%)" }} />
                           </div>
                           <div>
                             <div className="font-display text-lg leading-tight group-hover/card:text-primary transition">{c.name}</div>
@@ -237,7 +238,7 @@ function CategoryModal({ onClose, initial }: { onClose: () => void; initial?: Ca
 
           <div className="rounded-xl p-4 border border-white/10 bg-white/[0.03] flex items-center gap-3">
             <div className="size-10 rounded-xl grid place-items-center shadow-glow" style={{ background: color }}>
-              <Tag className="size-5" style={{ color: "hsl(30 25% 8%)" }} />
+              <CategoryIcon name={icon} className="size-5" style={{ color: "hsl(30 25% 8%)" }} />
             </div>
             <div>
               <div className="text-sm">{name || "Preview"}</div>
