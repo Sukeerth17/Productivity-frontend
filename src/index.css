@@ -164,14 +164,14 @@
 @layer components {
   .glass {
     @apply backdrop-blur-xl border rounded-2xl;
-    background: hsl(var(--glass-bg) / 0.045);
-    border-color: hsl(var(--glass-border) / 0.10);
+    background: hsl(var(--background) / 0.3);
+    border-color: hsl(var(--glass-border) / 0.08);
     box-shadow: var(--shadow-soft), var(--shadow-inner-line);
   }
   .glass-strong {
     @apply backdrop-blur-2xl border rounded-2xl;
-    background: hsl(var(--glass-bg) / 0.08);
-    border-color: hsl(var(--glass-border) / 0.16);
+    background: hsl(var(--background) / 0.6);
+    border-color: hsl(var(--glass-border) / 0.12);
     box-shadow: var(--shadow-soft), var(--shadow-inner-line);
   }
   .glass-hover {
@@ -212,17 +212,17 @@
 
   /* === Light-mode polish: brighter glass + readable text === */
   .theme-light .glass {
-    background: hsl(150 40% 100% / 0.55);
-    border-color: hsl(var(--glass-border) / 0.18);
+    background: hsl(150 40% 100% / 0.45);
+    border-color: hsl(var(--glass-border) / 0.15);
   }
   .theme-light .glass-strong {
-    background: hsl(150 40% 100% / 0.78);
-    border-color: hsl(var(--glass-border) / 0.22);
-    box-shadow: var(--shadow-soft), inset 0 1px 0 hsl(150 40% 100% / 0.7);
+    background: hsl(150 40% 100% / 0.7);
+    border-color: hsl(var(--glass-border) / 0.2);
+    box-shadow: var(--shadow-soft), inset 0 1px 0 hsl(150 40% 100% / 0.6);
   }
   .theme-light .glass-hover:hover {
-    background: hsl(150 40% 100% / 0.92);
-    border-color: hsl(var(--primary) / 0.5);
+    background: hsl(150 40% 100% / 0.85);
+    border-color: hsl(var(--primary) / 0.4);
   }
   /* Replace dark white-alpha chips with emerald-tinted ones in light mode */
   .theme-light .bg-white\/5,
