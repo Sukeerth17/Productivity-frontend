@@ -1,7 +1,12 @@
 node_modules
 dist
 .env
+.env.local
+.env.*.local
 .DS_Store
 .vscode/*
 !.vscode/extensions.json
 *.png
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
