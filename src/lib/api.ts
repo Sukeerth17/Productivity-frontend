@@ -102,7 +102,7 @@ export const api = {
   deleteCategory: (id: string) => request<void>(`/categories/${id}`, { method: "DELETE" }),
 
   // tasks
-  listTasks: (q: { category_id?: string; completed?: boolean; priority?: Priority; search?: string; limit?: number; offset?: number } = {}) => {
+  listTasks: (q: { category_id?: string; completed?: boolean; priority?: Priority; search?: string; date_filter?: "today" | "all"; limit?: number; offset?: number } = {}) => {
     const p = new URLSearchParams();
     Object.entries(q).forEach(([k, v]) => v !== undefined && v !== null && v !== "" && p.append(k, String(v)));
     const qs = p.toString();

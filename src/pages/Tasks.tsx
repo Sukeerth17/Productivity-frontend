@@ -27,6 +27,7 @@ export default function Tasks() {
   const [filterCat, setFilterCat] = useState<string>("");
   const [filterPriority, setFilterPriority] = useState<Priority | "all">("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "done">("all");
+  const [filterDate, setFilterDate] = useState<"all" | "today">("today");
 
   useEffect(() => {
     if (searchParams.get("new") === "true") {
@@ -40,12 +41,13 @@ export default function Tasks() {
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: api.listCategories });
   const tasks = useQuery({
-    queryKey: ["tasks", { filterCat, filterPriority, filterStatus, searchFilter }],
+    queryKey: ["tasks", { filterCat, filterPriority, filterStatus, filterDate, searchFilter }],
     queryFn: () => api.listTasks({
       category_id: filterCat || undefined,
       priority: filterPriority === "all" ? undefined : filterPriority,
       completed: filterStatus === "all" ? undefined : filterStatus === "done",
       search: searchFilter || undefined,
+      date_filter: filterDate === "all" ? undefined : filterDate,
       limit: 100,
     }),
   });
@@ -165,7 +167,17 @@ export default function Tasks() {
               </SelectContent>
             </Select>
 
-            {(filterCat || filterPriority !== "all" || filterStatus !== "all" || searchFilter) && (
+            <Select value={filterDate} onValueChange={(v) => setFilterDate(v as "all" | "today")}>
+              <SelectTrigger className="w-[130px] rounded-xl bg-white/5 border-white/10 hover:bg-white/10 transition-colors h-9 text-xs">
+                <SelectValue placeholder="Time" />
+              </SelectTrigger>
+              <SelectContent className="glass-strong border-white/10">
+                <SelectItem value="all">All time</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {(filterCat || filterPriority !== "all" || filterStatus !== "all" || filterDate !== "all" || searchFilter) && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -173,6 +185,7 @@ export default function Tasks() {
                   setFilterCat("");
                   setFilterPriority("all");
                   setFilterStatus("all");
+                  setFilterDate("all");
                   searchParams.delete("search");
                   setSearchParams(searchParams);
                 }}
