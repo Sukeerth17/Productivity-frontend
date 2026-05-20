@@ -261,7 +261,7 @@ export function TaskListItem({
                 )}
               </button>
               {/* Editable % */}
-              <div className="flex items-center gap-0.5">
+              <div className="flex items-center gap-1">
                 <input
                   type="number"
                   min={0}
@@ -270,9 +270,9 @@ export function TaskListItem({
                   onChange={(e) => handleProgressInput(e.target.value)}
                   onKeyDown={handleProgressKeyDown}
                   onBlur={handleProgressBlur}
-                  className="w-8 text-[10px] text-center bg-transparent border-b border-white/20 focus:border-primary outline-none text-muted-foreground leading-none py-0.5 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  className="w-11 text-xs font-medium text-center bg-transparent border-b border-white/20 focus:border-primary outline-none text-muted-foreground leading-none py-0.5 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
-                <span className="text-[10px] text-muted-foreground">%</span>
+                <span className="text-xs font-medium text-muted-foreground">%</span>
               </div>
             </div>
 
