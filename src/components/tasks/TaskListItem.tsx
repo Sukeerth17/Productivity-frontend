@@ -27,6 +27,11 @@ function makeDraft(task: Task): EditDraft {
   };
 }
 
+function getDisplayProgress(task: Task): number {
+  if (task.completed) return 100;
+  return task.progress ?? 0;
+}
+
 export function TaskListItem({
   task,
   cat,
@@ -57,14 +62,15 @@ export function TaskListItem({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<EditDraft>(() => makeDraft(task));
-  const [progress, setProgress] = useState<number>(task.progress ?? 0);
-  const [inputVal, setInputVal] = useState<string>(String(task.progress ?? 0));
+  const [progress, setProgress] = useState<number>(() => getDisplayProgress(task));
+  const [inputVal, setInputVal] = useState<string>(() => String(getDisplayProgress(task)));
 
   // Sync when task.progress changes from outside (e.g. after toggle)
   useEffect(() => {
-    setProgress(task.progress ?? 0);
-    setInputVal(String(task.progress ?? 0));
-  }, [task.progress]);
+    const nextProgress = getDisplayProgress(task);
+    setProgress(nextProgress);
+    setInputVal(String(nextProgress));
+  }, [task.progress, task.completed]);
 
   useEffect(() => {
     if (!isEditing) setDraft(makeDraft(task));
@@ -113,7 +119,7 @@ export function TaskListItem({
     setProgress(clamped);
     setInputVal(String(clamped));
 
-    if (clamped !== task.progress) {
+    if (clamped !== getDisplayProgress(task)) {
       onProgressSave(task.id, clamped);
     }
   };
