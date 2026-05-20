@@ -12,6 +12,16 @@ import { TaskListItem } from "@/components/tasks/TaskListItem";
 import { NewTaskModal } from "@/components/tasks/NewTaskModal";
 import { toast } from "sonner";
 
+function patchTaskInLists(qc: ReturnType<typeof useQueryClient>, taskId: string, updater: (task: Task) => Task) {
+  qc.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
+    if (!old?.items) return old;
+    return {
+      ...old,
+      items: old.items.map((task: Task) => (task.id === taskId ? updater(task) : task)),
+    };
+  });
+}
+
 export default function CategoryDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -38,13 +48,12 @@ export default function CategoryDetail() {
       await qc.cancelQueries({ queryKey: ["tasks"] });
       const previousTasks = qc.getQueriesData({ queryKey: ["tasks"] });
       
-      qc.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
-        if (!old || !old.items) return old;
-        return {
-          ...old,
-          items: old.items.map((t: any) => t.id === id ? { ...t, completed: !t.completed } : t)
-        };
-      });
+      patchTaskInLists(qc, id, (task) => ({
+        ...task,
+        completed: !task.completed,
+        progress: task.completed ? 0 : 100,
+        completed_at: task.completed ? null : task.completed_at ?? new Date().toISOString(),
+      }));
       return { previousTasks };
     },
     onError: (err, newTodo, context) => {
@@ -70,6 +79,35 @@ export default function CategoryDetail() {
     mutationFn: ({ tid, payload }: { tid: string; payload: any }) => api.updateTask(tid, payload),
     onSuccess: () => {
       toast.success("Task updated");
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["productivity"] });
+    },
+  });
+  const updateProgress = useMutation({
+    mutationFn: ({ tid, progress }: { tid: string; progress: number }) => api.updateTask(tid, { progress }),
+    onMutate: async ({ tid, progress }) => {
+      await qc.cancelQueries({ queryKey: ["tasks"] });
+      const previousTasks = qc.getQueriesData({ queryKey: ["tasks"] });
+
+      patchTaskInLists(qc, tid, (task) => ({
+        ...task,
+        progress,
+        completed: progress >= 100,
+        completed_at: progress >= 100 ? task.completed_at ?? new Date().toISOString() : null,
+      }));
+
+      return { previousTasks };
+    },
+    onError: (err, _variables, context) => {
+      if (context?.previousTasks) {
+        context.previousTasks.forEach(([queryKey, data]) => {
+          qc.setQueryData(queryKey, data);
+        });
+      }
+      toast.error((err as Error)?.message || "Could not update progress");
+    },
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["productivity"] });
@@ -174,7 +212,8 @@ export default function CategoryDetail() {
                   onToggle={(tid) => toggle.mutate(tid)}
                   onDelete={(tid) => delTask.mutate(tid)}
                   onSave={(tid, payload) => updateTask.mutate({ tid, payload })}
-                  isSaving={updateTask.isPending}
+                  onProgressSave={(tid, progress) => updateProgress.mutate({ tid, progress })}
+                  isSaving={updateTask.isPending || updateProgress.isPending}
                 />
               ))}
             </AnimatePresence>

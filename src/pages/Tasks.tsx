@@ -20,6 +20,16 @@ import {
 
 const PRIORITIES: (Priority | "all")[] = ["all", "low", "medium", "high"];
 
+function patchTaskInLists(qc: ReturnType<typeof useQueryClient>, taskId: string, updater: (task: Task) => Task) {
+  qc.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
+    if (!old?.items) return old;
+    return {
+      ...old,
+      items: old.items.map((task: Task) => (task.id === taskId ? updater(task) : task)),
+    };
+  });
+}
+
 export default function Tasks() {
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,13 +66,12 @@ export default function Tasks() {
       await qc.cancelQueries({ queryKey: ["tasks"] });
       const previousTasks = qc.getQueriesData({ queryKey: ["tasks"] });
       
-      qc.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
-        if (!old || !old.items) return old;
-        return {
-          ...old,
-          items: old.items.map((t: any) => t.id === id ? { ...t, completed: !t.completed } : t)
-        };
-      });
+      patchTaskInLists(qc, id, (task) => ({
+        ...task,
+        completed: !task.completed,
+        progress: task.completed ? 0 : 100,
+        completed_at: task.completed ? null : task.completed_at ?? new Date().toISOString(),
+      }));
       return { previousTasks };
     },
     onError: (err, newTodo, context) => {
@@ -91,6 +100,35 @@ export default function Tasks() {
       qc.invalidateQueries({ queryKey: ["productivity"] });
     },
     onError: (e: any) => toast.error(e?.message || "Could not update task"),
+  });
+  const updateProgress = useMutation({
+    mutationFn: ({ id, progress }: { id: string; progress: number }) => api.updateTask(id, { progress }),
+    onMutate: async ({ id, progress }) => {
+      await qc.cancelQueries({ queryKey: ["tasks"] });
+      const previousTasks = qc.getQueriesData({ queryKey: ["tasks"] });
+
+      patchTaskInLists(qc, id, (task) => ({
+        ...task,
+        progress,
+        completed: progress >= 100,
+        completed_at: progress >= 100 ? task.completed_at ?? new Date().toISOString() : null,
+      }));
+
+      return { previousTasks };
+    },
+    onError: (err, _variables, context) => {
+      if (context?.previousTasks) {
+        context.previousTasks.forEach(([queryKey, data]) => {
+          qc.setQueryData(queryKey, data);
+        });
+      }
+      toast.error((err as Error)?.message || "Could not update progress");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["productivity"] });
+    },
   });
 
   const grouped = useMemo(() => {
@@ -200,7 +238,8 @@ export default function Tasks() {
             onToggle={(id) => toggle.mutate(id)}
             onDelete={(id) => del.mutate(id)}
             onSave={(id, payload) => update.mutate({ id, payload })}
-            isSaving={update.isPending}
+            onProgressSave={(id, progress) => updateProgress.mutate({ id, progress })}
+            isSaving={update.isPending || updateProgress.isPending}
           />
           <Section
             title="Completed"
@@ -209,7 +248,8 @@ export default function Tasks() {
             onToggle={(id) => toggle.mutate(id)}
             onDelete={(id) => del.mutate(id)}
             onSave={(id, payload) => update.mutate({ id, payload })}
-            isSaving={update.isPending}
+            onProgressSave={(id, progress) => updateProgress.mutate({ id, progress })}
+            isSaving={update.isPending || updateProgress.isPending}
           />
         </div>
       </SmoothLoad>
@@ -222,7 +262,7 @@ export default function Tasks() {
 }
 
 
-function Section({ title, items, cats, onToggle, onDelete, onSave, isSaving }: {
+function Section({ title, items, cats, onToggle, onDelete, onSave, onProgressSave, isSaving }: {
   title: string; items: Task[]; cats: { id: string; name: string; color: string }[];
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
@@ -233,7 +273,10 @@ function Section({ title, items, cats, onToggle, onDelete, onSave, isSaving }: {
     priority: Priority | null;
     due_time: string | null;
     is_habit: boolean;
+    start_date: string | null;
+    habit_days: number[] | null;
   }) => void;
+  onProgressSave: (id: string, progress: number) => void;
   isSaving: boolean;
 }) {
   return (
@@ -258,6 +301,7 @@ function Section({ title, items, cats, onToggle, onDelete, onSave, isSaving }: {
                   onToggle={onToggle}
                   onDelete={onDelete}
                   onSave={onSave}
+                  onProgressSave={onProgressSave}
                   isSaving={isSaving}
                 />
               );

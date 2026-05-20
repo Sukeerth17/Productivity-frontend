@@ -11,6 +11,7 @@ export interface Task {
   id: string; title: string; category_id: string; notes: string | null;
   completed: boolean; is_habit: boolean; priority: Priority | null; due_time: string | null;
   start_date: string | null; habit_days: number[] | null;
+  progress: number;
   created_at: string; completed_at: string | null; updated_at: string; subtasks: SubTask[];
 }
 export interface TaskUpdateInput {
@@ -23,6 +24,7 @@ export interface TaskUpdateInput {
   due_time?: string | null;
   start_date?: string | null;
   habit_days?: number[] | null;
+  progress?: number;
 }
 export interface PaginatedTasks { items: Task[]; total: number; limit: number; offset: number }
 export interface DashboardStats {
