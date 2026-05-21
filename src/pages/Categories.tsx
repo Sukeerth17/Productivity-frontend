@@ -6,7 +6,7 @@ import { Plus, Trash2, Pencil, X, Loader2, Check } from "lucide-react";
 import { api, type Category } from "@/lib/api";
 import { CategoryIcon } from "@/lib/icons";
 import { GlassCard } from "@/components/glass/GlassCard";
-import { Shimmer } from "@/components/glass/Skeleton";
+import CategoriesSkeleton from "@/components/skeletons/CategoriesSkeleton";
 import { SmoothLoad } from "@/components/glass/SmoothLoad";
 import { toast } from "sonner";
 
@@ -48,9 +48,12 @@ export default function Categories() {
     onSuccess: () => { toast.success("Category deleted"); },
   });
 
+  const isLoading = cats.isLoading || tasks.isLoading;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <SmoothLoad isLoading={isLoading} loadingComponent={<CategoriesSkeleton />}>
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-sm text-muted-foreground">Workspace</div>
           <h1 className="font-display text-3xl md:text-4xl">Categories</h1>
@@ -63,14 +66,6 @@ export default function Categories() {
         </motion.button>
       </div>
 
-      <SmoothLoad
-        isLoading={cats.isLoading}
-        loadingComponent={
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => <Shimmer key={i} className="h-40" />)}
-          </div>
-        }
-      >
         {(cats.data?.length ?? 0) === 0 ? (
           <GlassCard className="text-center py-16">
             <div className="size-14 mx-auto rounded-2xl bg-gradient-primary grid place-items-center shadow-glow mb-4">
@@ -137,13 +132,13 @@ export default function Categories() {
             </AnimatePresence>
           </motion.div>
         )}
-      </SmoothLoad>
 
       <AnimatePresence>
         {showNew && <CategoryModal onClose={() => setShowNew(false)} />}
         {editing && <CategoryModal onClose={() => setEditing(null)} initial={editing} />}
       </AnimatePresence>
-    </div>
+      </div>
+    </SmoothLoad>
   );
 }
 

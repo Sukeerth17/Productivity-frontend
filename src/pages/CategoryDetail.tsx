@@ -6,7 +6,7 @@ import { ArrowLeft, Pencil, Trash2, Plus, Loader2, Filter } from "lucide-react";
 import { api, type Priority, type Task, type Category } from "@/lib/api";
 import { CategoryIcon } from "@/lib/icons";
 import { GlassCard } from "@/components/glass/GlassCard";
-import { Shimmer } from "@/components/glass/Skeleton";
+import CategoryDetailSkeleton from "@/components/skeletons/CategoryDetailSkeleton";
 import { SmoothLoad } from "@/components/glass/SmoothLoad";
 import { TaskListItem } from "@/components/tasks/TaskListItem";
 import { NewTaskModal } from "@/components/tasks/NewTaskModal";
@@ -138,9 +138,12 @@ export default function CategoryDetail() {
   const items = tasks.data?.items ?? [];
   const activeCount = items.filter(t => !t.completed).length;
 
+  const isLoading = cats.isLoading || tasks.isLoading;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <SmoothLoad isLoading={isLoading} loadingComponent={<CategoryDetailSkeleton />}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
         <button onClick={() => navigate("/categories")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition">
           <ArrowLeft className="size-4" /> Back to Categories
         </button>
@@ -151,10 +154,6 @@ export default function CategoryDetail() {
         </div>
       </div>
 
-      <SmoothLoad
-        isLoading={cats.isLoading}
-        loadingComponent={<Shimmer className="h-40 w-full" />}
-      >
         {category && (
           <GlassCard className="relative overflow-hidden p-8">
             <div className="absolute -top-24 -right-24 size-64 rounded-full opacity-20 blur-3xl" style={{ background: category.color }} />
@@ -176,7 +175,6 @@ export default function CategoryDetail() {
             </div>
           </GlassCard>
         )}
-      </SmoothLoad>
 
       <div className="flex items-center justify-between">
         <div className="flex gap-2 p-1 rounded-xl bg-white/5 border border-white/10 w-fit">
@@ -186,12 +184,6 @@ export default function CategoryDetail() {
         </div>
       </div>
 
-      <SmoothLoad
-        isLoading={tasks.isLoading}
-        loadingComponent={
-          <div className="grid gap-3">{Array.from({ length: 5 }).map((_, i) => <Shimmer key={i} className="h-16" />)}</div>
-        }
-      >
         {items.length === 0 ? (
           <GlassCard className="text-center py-20">
             <div className="size-12 mx-auto rounded-2xl bg-white/5 border border-white/10 grid place-items-center mb-4">
@@ -219,7 +211,6 @@ export default function CategoryDetail() {
             </AnimatePresence>
           </div>
         )}
-      </SmoothLoad>
 
       <AnimatePresence>
         {showNew && (
@@ -230,6 +221,7 @@ export default function CategoryDetail() {
           />
         )}
       </AnimatePresence>
-    </div>
+      </div>
+    </SmoothLoad>
   );
 }

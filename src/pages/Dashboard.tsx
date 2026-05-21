@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
 import { GlassCard } from "@/components/glass/GlassCard";
-import { Shimmer } from "@/components/glass/Skeleton";
+import DashboardSkeleton from "@/components/skeletons/DashboardSkeleton";
 import { SmoothLoad } from "@/components/glass/SmoothLoad";
 import { useAuth } from "@/store/auth";
 import { CheckCircle2, ListTodo, Flame, Target, Calendar } from "lucide-react";
@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [range, setRange] = React.useState<"week" | "month" | "all">("all");
   const loadingCharts = prod.isLoading;
   const loadingTasks = tasks.isLoading;
+  const isLoading = loadingStats || loadingCharts || loadingTasks;
 
   const trendData = React.useMemo(() => {
     const raw = prod.data?.trend || [];
@@ -44,27 +45,19 @@ export default function Dashboard() {
   }, [prod.data, range]);
 
   return (
-    <div className="space-y-6">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="text-sm text-muted-foreground">Hello {user?.name?.split(" ")[0] || "there"} 👋</div>
-        <h1 className="font-display text-3xl md:text-4xl">Your <span className="gradient-text">momentum</span> today</h1>
-      </motion.div>
+    <SmoothLoad isLoading={isLoading} loadingComponent={<DashboardSkeleton />}>
+      <div className="space-y-6">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="text-sm text-muted-foreground">Hello {user?.name?.split(" ")[0] || "there"} 👋</div>
+          <h1 className="font-display text-3xl md:text-4xl">Your <span className="gradient-text">momentum</span> today</h1>
+        </motion.div>
 
-      <SmoothLoad
-        isLoading={loadingStats}
-        loadingComponent={
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {Array.from({ length: 4 }).map((_, i) => <Shimmer key={i} className="h-28" />)}
-          </div>
-        }
-      >
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Stat icon={<ListTodo className="size-5" />} label="Active tasks" value={dash.data?.active_tasks ?? 0} accent />
           <Stat icon={<CheckCircle2 className="size-5" />} label="Completed" value={dash.data?.completed_tasks ?? 0} />
           <Stat icon={<Target className="size-5" />} label="Completion" value={`${Math.round(dash.data?.completion_rate ?? 0)}%`} />
           <Stat icon={<Flame className="size-5" />} label="Streak" value={`${hist.data?.current_streak ?? 0}d`} />
         </div>
-      </SmoothLoad>
 
       <div className="grid lg:grid-cols-3 gap-4">
         <GlassCard className="lg:col-span-2">
@@ -88,11 +81,6 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="h-64">
-            <SmoothLoad
-              className="h-full w-full"
-              isLoading={loadingCharts}
-              loadingComponent={<Shimmer className="h-full" />}
-            >
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendData}>
                   <defs>
@@ -131,21 +119,12 @@ export default function Dashboard() {
                   />
                 </AreaChart>
               </ResponsiveContainer>
-            </SmoothLoad>
           </div>
         </GlassCard>
 
         <GlassCard>
           <div className="text-sm text-muted-foreground">Categories</div>
           <div className="font-display text-2xl mb-3">Top breakdown</div>
-          <SmoothLoad
-            isLoading={loadingCharts}
-            loadingComponent={
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => <Shimmer key={i} className="h-10" />)}
-              </div>
-            }
-          >
             <div className="space-y-3">
               {(prod.data?.category_breakdown ?? []).slice(0, 5).map((c) => (
                 <div key={c.category_id}>
@@ -167,7 +146,6 @@ export default function Dashboard() {
                 <div className="text-sm text-muted-foreground">No categories yet.</div>
               )}
             </div>
-          </SmoothLoad>
         </GlassCard>
       </div>
 
@@ -179,14 +157,6 @@ export default function Dashboard() {
           </div>
           <Calendar className="size-4 text-muted-foreground" />
         </div>
-        <SmoothLoad
-          isLoading={loadingTasks}
-          loadingComponent={
-            <div className="space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => <Shimmer key={i} className="h-12" />)}
-            </div>
-          }
-        >
           {(!tasks.data || tasks.data.items.length === 0) ? (
             <div className="text-sm text-muted-foreground">No tasks yet — head to <span className="text-foreground">Tasks</span> to add one.</div>
           ) : (
@@ -203,9 +173,9 @@ export default function Dashboard() {
               ))}
             </ul>
           )}
-        </SmoothLoad>
       </GlassCard>
-    </div>
+      </div>
+    </SmoothLoad>
   );
 }
 

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Loader2, Filter, X, Pencil, Save, CalendarClock } from "lucide-react";
 import { api, type Priority, type Task } from "@/lib/api";
 import { GlassCard } from "@/components/glass/GlassCard";
-import { Shimmer } from "@/components/glass/Skeleton";
+import TasksSkeleton from "@/components/skeletons/TasksSkeleton";
 import { SmoothLoad } from "@/components/glass/SmoothLoad";
 import { TaskListItem } from "@/components/tasks/TaskListItem";
 import { NewTaskModal } from "@/components/tasks/NewTaskModal";
@@ -141,9 +141,12 @@ export default function Tasks() {
     return { active: items.filter((t) => !t.completed), done: items.filter((t) => t.completed) };
   }, [tasks.data]);
 
+  const isLoading = tasks.isLoading || cats.isLoading;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <SmoothLoad isLoading={isLoading} loadingComponent={<TasksSkeleton />}>
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-sm text-muted-foreground">Workspace</div>
           <h1 className="font-display text-3xl md:text-4xl">Tasks</h1>
@@ -264,12 +267,6 @@ export default function Tasks() {
         </div>
       </GlassCard>
 
-      <SmoothLoad
-        isLoading={tasks.isLoading}
-        loadingComponent={
-          <div className="grid gap-3">{Array.from({ length: 5 }).map((_, i) => <Shimmer key={i} className="h-16" />)}</div>
-        }
-      >
         {showFuture ? (
           /* ── Upcoming mode: single column, soonest first ── */
           <div className="space-y-3">
@@ -313,12 +310,12 @@ export default function Tasks() {
             />
           </div>
         )}
-      </SmoothLoad>
 
       <AnimatePresence>
         {showNew && <NewTaskModal onClose={() => setShowNew(false)} categories={cats.data ?? []} />}
       </AnimatePresence>
-    </div>
+      </div>
+    </SmoothLoad>
   );
 }
 
