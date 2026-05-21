@@ -37,7 +37,7 @@ export default function Tasks() {
   const [filterCat, setFilterCat]           = useState<string>("");
   const [filterPriority, setFilterPriority] = useState<Priority | "all">("all");
   const [filterStatus, setFilterStatus]     = useState<"all" | "active" | "done">("all");
-  const [filterDate, setFilterDate]         = useState<"all" | "today">("all");
+  const [filterDate, setFilterDate]         = useState<"all" | "today">("today");
 
   useEffect(() => {
     if (searchParams.get("new") === "true") {
