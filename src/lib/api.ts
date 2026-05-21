@@ -39,12 +39,15 @@ export interface CategoryBreakdownItem {
   category_id: string; category_name: string; color: string;
   total_tasks: number; completed_tasks: number; completion_rate: number;
 }
+export interface TrendPoint { date: string; rate: number }
 export interface ProductivityStats {
   alltime_total_tasks: number; alltime_completed_tasks: number; alltime_completion_rate: number;
   month_total_tasks: number; month_completed_tasks: number; month_completion_rate: number;
   week_total_tasks: number; week_completed_tasks: number; week_completion_rate: number;
   day_total_tasks: number; day_completed_tasks: number; day_completion_rate: number;
-  category_breakdown: CategoryBreakdownItem[] | null; updated_at: string;
+  category_breakdown: CategoryBreakdownItem[] | null;
+  trend: TrendPoint[];
+  updated_at: string;
 }
 
 const DEFAULT_BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
@@ -61,14 +64,40 @@ export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
+// ---------------------------------------------------------------------------
+// In-flight deduplication: if two components call the same GET endpoint at the
+// same time (e.g. Dashboard mounting), they share ONE network request.
+// ---------------------------------------------------------------------------
+const _inflight = new Map<string, Promise<any>>();
+
 async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem("auth_token");
+  const token = localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token_session");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
+    "Connection": "keep-alive",
     ...(opts.headers as Record<string, string> | undefined),
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${getApiBase()}/api/v1${path}`, { ...opts, headers });
+
+  const url = `${getApiBase()}/api/v1${path}`;
+  const isGet = !opts.method || opts.method === "GET";
+
+  // Deduplicate identical in-flight GET requests
+  if (isGet) {
+    const dedupeKey = `${url}`;
+    const existing = _inflight.get(dedupeKey);
+    if (existing) return existing;
+
+    const promise = _fetch<T>(url, opts, headers).finally(() => _inflight.delete(dedupeKey));
+    _inflight.set(dedupeKey, promise);
+    return promise;
+  }
+
+  return _fetch<T>(url, opts, headers);
+}
+
+async function _fetch<T>(url: string, opts: RequestInit, headers: Record<string, string>): Promise<T> {
+  const res = await fetch(url, { ...opts, headers });
   if (res.status === 204) return undefined as T;
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
@@ -76,7 +105,6 @@ async function request<T>(path: string, opts: RequestInit = {}): Promise<T> {
     if (res.status === 401) {
       localStorage.removeItem("auth_token");
       sessionStorage.removeItem("auth_token_session");
-      // Optional: window.location.href = "/login";
     }
     const detail = (data && (data.detail || data.message)) || res.statusText;
     throw new ApiError(res.status, typeof detail === "string" ? detail : JSON.stringify(detail));
@@ -118,7 +146,9 @@ export const api = {
   toggleTask: (id: string) => request<Task>(`/tasks/${id}/toggle`, { method: "POST" }),
 
   // stats
-  dashboard: () => request<DashboardStats>("/stats/dashboard"),
-  history: () => request<HistorySummary>("/stats/history-summary"),
+  dashboard:    () => request<DashboardStats>("/stats/dashboard"),
+  history:      () => request<HistorySummary>("/stats/history-summary"),
   productivity: () => request<ProductivityStats>("/stats/productivity"),
+  categoryCompletion: (days = 30) => request<CategoryBreakdownItem[]>(`/stats/category-completion?days=${days}`),
 };
+
