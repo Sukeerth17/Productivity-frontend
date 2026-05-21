@@ -34,9 +34,10 @@ export default function Tasks() {
   const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showNew, setShowNew] = useState(false);
-  const [filterCat, setFilterCat] = useState<string>("");
+  const [filterCat, setFilterCat]           = useState<string>("");
   const [filterPriority, setFilterPriority] = useState<Priority | "all">("all");
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "done">("all");
+  const [filterStatus, setFilterStatus]     = useState<"all" | "active" | "done">("all");
+  const [filterDate, setFilterDate]         = useState<"all" | "today">("all");
 
   useEffect(() => {
     if (searchParams.get("new") === "true") {
@@ -50,12 +51,13 @@ export default function Tasks() {
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: api.listCategories });
   const tasks = useQuery({
-    queryKey: ["tasks", { filterCat, filterPriority, filterStatus, searchFilter }],
+    queryKey: ["tasks", { filterCat, filterPriority, filterStatus, filterDate, searchFilter }],
     queryFn: () => api.listTasks({
-      category_id: filterCat || undefined,
-      priority: filterPriority === "all" ? undefined : filterPriority,
-      completed: filterStatus === "all" ? undefined : filterStatus === "done",
-      search: searchFilter || undefined,
+      category_id:  filterCat || undefined,
+      priority:     filterPriority === "all" ? undefined : filterPriority,
+      completed:    filterStatus  === "all" ? undefined : filterStatus === "done",
+      date_filter:  filterDate    === "all" ? undefined : filterDate,
+      search:       searchFilter  || undefined,
       limit: 100,
     }),
   });
@@ -167,6 +169,23 @@ export default function Tasks() {
           <div className="flex flex-wrap gap-2 items-center">
             <Filter className="size-3.5 text-white/40 mr-1" />
             
+            {/* ── Date filter: Today / All ── */}
+            <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+              {(["all", "today"] as const).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setFilterDate(d)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    filterDate === d
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  {d === "all" ? "All days" : "Today"}
+                </button>
+              ))}
+            </div>
+
             <Select value={filterCat || "all"} onValueChange={(v) => setFilterCat(v === "all" ? "" : v)}>
               <SelectTrigger className="w-[160px] rounded-xl bg-white/5 border-white/10 hover:bg-white/10 transition-colors h-9 text-xs">
                 <SelectValue placeholder="All categories" />
@@ -203,7 +222,7 @@ export default function Tasks() {
               </SelectContent>
             </Select>
 
-            {(filterCat || filterPriority !== "all" || filterStatus !== "all" || searchFilter) && (
+            {(filterCat || filterPriority !== "all" || filterStatus !== "all" || filterDate !== "all" || searchFilter) && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -211,6 +230,7 @@ export default function Tasks() {
                   setFilterCat("");
                   setFilterPriority("all");
                   setFilterStatus("all");
+                  setFilterDate("all");
                   searchParams.delete("search");
                   setSearchParams(searchParams);
                 }}
