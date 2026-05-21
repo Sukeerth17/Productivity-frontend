@@ -241,7 +241,7 @@ export default function Tasks() {
               </SelectContent>
             </Select>
 
-            {(filterCat || filterPriority !== "all" || filterStatus !== "all" || filterDate !== "all" || showFuture || searchFilter) && (
+            {(filterCat || filterPriority !== "all" || filterStatus !== "all" || filterDate !== "today" || showFuture || searchFilter) && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -249,7 +249,7 @@ export default function Tasks() {
                   setFilterCat("");
                   setFilterPriority("all");
                   setFilterStatus("all");
-                  setFilterDate("today");
+                  setFilterDate("all");
                   setShowFuture(false);
                   searchParams.delete("search");
                   setSearchParams(searchParams);
