@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, Loader2, Filter, X, Pencil, Save } from "lucide-react";
+import { Plus, Trash2, Loader2, Filter, X, Pencil, Save, CalendarClock } from "lucide-react";
 import { api, type Priority, type Task } from "@/lib/api";
 import { GlassCard } from "@/components/glass/GlassCard";
 import { Shimmer } from "@/components/glass/Skeleton";
@@ -38,6 +38,7 @@ export default function Tasks() {
   const [filterPriority, setFilterPriority] = useState<Priority | "all">("all");
   const [filterStatus, setFilterStatus]     = useState<"all" | "active" | "done">("all");
   const [filterDate, setFilterDate]         = useState<"all" | "today">("today");
+  const [showFuture, setShowFuture]         = useState(false);
 
   useEffect(() => {
     if (searchParams.get("new") === "true") {
@@ -51,13 +52,15 @@ export default function Tasks() {
 
   const cats = useQuery({ queryKey: ["categories"], queryFn: api.listCategories });
   const tasks = useQuery({
-    queryKey: ["tasks", { filterCat, filterPriority, filterStatus, filterDate, searchFilter }],
+    queryKey: ["tasks", { filterCat, filterPriority, filterStatus, filterDate, showFuture, searchFilter }],
     queryFn: () => api.listTasks({
-      category_id:  filterCat || undefined,
-      priority:     filterPriority === "all" ? undefined : filterPriority,
-      completed:    filterStatus  === "all" ? undefined : filterStatus === "done",
-      date_filter:  filterDate    === "all" ? undefined : filterDate,
-      search:       searchFilter  || undefined,
+      category_id:    filterCat      || undefined,
+      priority:       filterPriority === "all" ? undefined : filterPriority,
+      // When showing future tasks, ignore status/date filters (all future tasks regardless of completion)
+      completed:      showFuture ? undefined : (filterStatus === "all" ? undefined : filterStatus === "done"),
+      date_filter:    showFuture ? undefined : (filterDate  === "all" ? undefined : filterDate),
+      include_future: showFuture || undefined,
+      search:         searchFilter  || undefined,
       limit: 100,
     }),
   });
@@ -170,21 +173,37 @@ export default function Tasks() {
             <Filter className="size-3.5 text-white/40 mr-1" />
             
             {/* ── Date filter: Today / All ── */}
-            <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
-              {(["all", "today"] as const).map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setFilterDate(d)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    filterDate === d
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  }`}
-                >
-                  {d === "all" ? "All days" : "Today"}
-                </button>
-              ))}
-            </div>
+            {!showFuture && (
+              <div className="flex gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
+                {(["all", "today"] as const).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setFilterDate(d)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      filterDate === d
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    }`}
+                  >
+                    {d === "all" ? "All days" : "Today"}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ── Upcoming tasks toggle ── */}
+            <button
+              onClick={() => setShowFuture((v) => !v)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all ${
+                showFuture
+                  ? "bg-violet-500/20 text-violet-300 border-violet-500/40 shadow-[0_0_8px_rgba(139,92,246,0.2)]"
+                  : "bg-white/5 border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/10"
+              }`}
+              title={showFuture ? "Hide upcoming tasks" : "Show upcoming tasks"}
+            >
+              <CalendarClock className="size-3.5" />
+              Upcoming
+            </button>
 
             <Select value={filterCat || "all"} onValueChange={(v) => setFilterCat(v === "all" ? "" : v)}>
               <SelectTrigger className="w-[160px] rounded-xl bg-white/5 border-white/10 hover:bg-white/10 transition-colors h-9 text-xs">
@@ -222,7 +241,7 @@ export default function Tasks() {
               </SelectContent>
             </Select>
 
-            {(filterCat || filterPriority !== "all" || filterStatus !== "all" || filterDate !== "all" || searchFilter) && (
+            {(filterCat || filterPriority !== "all" || filterStatus !== "all" || filterDate !== "all" || showFuture || searchFilter) && (
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -230,7 +249,8 @@ export default function Tasks() {
                   setFilterCat("");
                   setFilterPriority("all");
                   setFilterStatus("all");
-                  setFilterDate("all");
+                  setFilterDate("today");
+                  setShowFuture(false);
                   searchParams.delete("search");
                   setSearchParams(searchParams);
                 }}
@@ -250,28 +270,49 @@ export default function Tasks() {
           <div className="grid gap-3">{Array.from({ length: 5 }).map((_, i) => <Shimmer key={i} className="h-16" />)}</div>
         }
       >
-        <div className="grid lg:grid-cols-2 gap-6">
-          <Section
-            title="Active"
-            items={grouped.active}
-            cats={cats.data ?? []}
-            onToggle={(id) => toggle.mutate(id)}
-            onDelete={(id) => del.mutate(id)}
-            onSave={(id, payload) => update.mutate({ id, payload })}
-            onProgressSave={(id, progress) => updateProgress.mutate({ id, progress })}
-            isSaving={update.isPending || updateProgress.isPending}
-          />
-          <Section
-            title="Completed"
-            items={grouped.done}
-            cats={cats.data ?? []}
-            onToggle={(id) => toggle.mutate(id)}
-            onDelete={(id) => del.mutate(id)}
-            onSave={(id, payload) => update.mutate({ id, payload })}
-            onProgressSave={(id, progress) => updateProgress.mutate({ id, progress })}
-            isSaving={update.isPending || updateProgress.isPending}
-          />
-        </div>
+        {showFuture ? (
+          /* ── Upcoming mode: single column, soonest first ── */
+          <div className="space-y-3">
+            <div className="flex items-center gap-2.5 px-1 text-sm text-violet-300/80">
+              <CalendarClock className="size-4 shrink-0" />
+              <span>Showing <strong>{tasks.data?.total ?? 0}</strong> upcoming task{(tasks.data?.total ?? 0) !== 1 ? "s" : ""} — ordered by start date</span>
+            </div>
+            <Section
+              title="Upcoming"
+              items={tasks.data?.items ?? []}
+              cats={cats.data ?? []}
+              onToggle={(id) => toggle.mutate(id)}
+              onDelete={(id) => del.mutate(id)}
+              onSave={(id, payload) => update.mutate({ id, payload })}
+              onProgressSave={(id, progress) => updateProgress.mutate({ id, progress })}
+              isSaving={update.isPending || updateProgress.isPending}
+            />
+          </div>
+        ) : (
+          /* ── Normal mode: Active / Completed split ── */
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Section
+              title="Active"
+              items={grouped.active}
+              cats={cats.data ?? []}
+              onToggle={(id) => toggle.mutate(id)}
+              onDelete={(id) => del.mutate(id)}
+              onSave={(id, payload) => update.mutate({ id, payload })}
+              onProgressSave={(id, progress) => updateProgress.mutate({ id, progress })}
+              isSaving={update.isPending || updateProgress.isPending}
+            />
+            <Section
+              title="Completed"
+              items={grouped.done}
+              cats={cats.data ?? []}
+              onToggle={(id) => toggle.mutate(id)}
+              onDelete={(id) => del.mutate(id)}
+              onSave={(id, payload) => update.mutate({ id, payload })}
+              onProgressSave={(id, progress) => updateProgress.mutate({ id, progress })}
+              isSaving={update.isPending || updateProgress.isPending}
+            />
+          </div>
+        )}
       </SmoothLoad>
 
       <AnimatePresence>
