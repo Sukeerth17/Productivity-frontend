@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, Calendar as CalendarIcon, ChevronDown } from "lucide-react";
@@ -32,6 +32,9 @@ export function NewTaskModal({
   defaultCategoryId?: string;
 }) {
   const qc = useQueryClient();
+  const modalRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  
   const [title, setTitle] = useState("");
   const [categoryId, setCategoryId] = useState(defaultCategoryId || categories[0]?.id || "");
   const [priority, setPriority] = useState<Priority | "none">("none");
@@ -43,6 +46,21 @@ export function NewTaskModal({
   const [habitSchedule, setHabitSchedule] = useState<"daily" | "specific">("daily");
   const [habitDays, setHabitDays] = useState<number[]>([]);
   const [askGeneral, setAskGeneral] = useState(false);
+
+  // Auto-scroll to form and focus input when modal opens
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+      if (modalRef.current) {
+        // Scroll to the input field
+        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const toggleDay = (d: number) => setHabitDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
@@ -138,13 +156,17 @@ export function NewTaskModal({
   };
 
   return (
-    <motion.div className="fixed inset-0 z-50 grid place-items-center p-4"
+    <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <div className="absolute inset-0 bg-background/60 backdrop-blur-xl" onClick={onClose} />
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        ref={modalRef}
+        initial={{ opacity: 0, scale: 0.9, y: 20 }} 
+        animate={{ opacity: 1, scale: 1, y: 0 }} 
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="glass-strong relative w-full max-w-xl p-8 space-y-6 overflow-hidden rounded-[2rem] border-white/10">
+        className="glass-strong relative w-full max-w-xl p-6 sm:p-8 space-y-6 overflow-hidden rounded-[2rem] border-white/10 my-auto"
+      >
         
         {/* Subtle background glow */}
         <div className="absolute -top-24 -left-24 size-48 bg-primary/20 blur-[80px] rounded-full pointer-events-none" />
@@ -177,6 +199,7 @@ export function NewTaskModal({
             <div className="space-y-5">
               <div className="space-y-1.5">
                 <Input 
+                  ref={inputRef}
                   autoFocus 
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)} 
