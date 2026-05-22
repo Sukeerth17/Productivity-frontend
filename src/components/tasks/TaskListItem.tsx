@@ -114,8 +114,10 @@ export function TaskListItem({
   const handleProgressFocus = () => inputRef.current?.select();
 
   const handleProgressInput = (raw: string) => {
-    setInputVal(raw);
-    const n = parseInt(raw, 10);
+    let sanitized = raw.replace(/^0+(?=\d)/, '');
+    if (sanitized === '') sanitized = '0';
+    setInputVal(sanitized);
+    const n = parseInt(sanitized, 10);
     if (!isNaN(n)) setProgress(Math.min(100, Math.max(0, n)));
   };
 
