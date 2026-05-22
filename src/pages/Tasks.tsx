@@ -90,6 +90,7 @@ export default function Tasks() {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["productivity"] });
+      qc.invalidateQueries({ queryKey: ["history"] });
     },
   });
   const del = useMutation({
@@ -103,6 +104,7 @@ export default function Tasks() {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["productivity"] });
+      qc.invalidateQueries({ queryKey: ["history"] });
     },
     onError: (e: any) => toast.error(e?.message || "Could not update task"),
   });
@@ -133,6 +135,7 @@ export default function Tasks() {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["productivity"] });
+      qc.invalidateQueries({ queryKey: ["history"] });
     },
   });
 

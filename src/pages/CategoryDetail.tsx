@@ -67,6 +67,7 @@ export default function CategoryDetail() {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["productivity"] });
+      qc.invalidateQueries({ queryKey: ["history"] });
     },
   });
 
@@ -82,6 +83,7 @@ export default function CategoryDetail() {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["productivity"] });
+      qc.invalidateQueries({ queryKey: ["history"] });
     },
   });
   const updateProgress = useMutation({
@@ -111,6 +113,7 @@ export default function CategoryDetail() {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["productivity"] });
+      qc.invalidateQueries({ queryKey: ["history"] });
     },
   });
 
