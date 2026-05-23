@@ -3,14 +3,18 @@ import { api } from "@/lib/api";
 import { GlassCard } from "@/components/glass/GlassCard";
 import InsightsSkeleton from "@/components/skeletons/InsightsSkeleton";
 import { SmoothLoad } from "@/components/glass/SmoothLoad";
+import { useAuth } from "@/store/auth";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export default function Insights() {
+  const user = useAuth((s) => s.user);
   const prod = useQuery({ queryKey: ["productivity"], queryFn: api.productivity });
   const hist = useQuery({ queryKey: ["history"], queryFn: api.history });
 
   const isLoading = prod.isLoading || hist.isLoading;
   const streak = hist.data?.current_streak ?? prod.data?.current_streak;
+  const totalMomentum = hist.data?.total_momentum ?? ((prod.data?.alltime_completed_tasks ?? 0) * 10);
+  const sinceDate = hist.data?.started_at ?? user?.created_at;
 
   return (
     <SmoothLoad isLoading={isLoading} loadingComponent={<InsightsSkeleton />}>
@@ -50,11 +54,11 @@ export default function Insights() {
         </GlassCard>
         <GlassCard>
           <div className="text-sm text-muted-foreground">Total momentum</div>
-          <div className="font-display text-4xl mt-1">{hist.data?.total_momentum ?? 0}</div>
+          <div className="font-display text-4xl mt-1">{totalMomentum}</div>
         </GlassCard>
         <GlassCard>
           <div className="text-sm text-muted-foreground">Since</div>
-          <div className="font-display text-2xl mt-1">{hist.data ? new Date(hist.data.started_at).toLocaleDateString() : "—"}</div>
+          <div className="font-display text-2xl mt-1">{sinceDate ? new Date(sinceDate).toLocaleDateString() : "—"}</div>
         </GlassCard>
       </div>
       </div>
