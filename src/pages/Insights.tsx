@@ -10,6 +10,7 @@ export default function Insights() {
   const hist = useQuery({ queryKey: ["history"], queryFn: api.history });
 
   const isLoading = prod.isLoading || hist.isLoading;
+  const streak = hist.data?.current_streak ?? prod.data?.current_streak;
 
   return (
     <SmoothLoad isLoading={isLoading} loadingComponent={<InsightsSkeleton />}>
@@ -45,7 +46,7 @@ export default function Insights() {
       <div className="grid lg:grid-cols-3 gap-4">
         <GlassCard>
           <div className="text-sm text-muted-foreground">Streak</div>
-          <div className="font-display text-4xl mt-1">{hist.data?.current_streak ?? 0} <span className="text-base text-muted-foreground">days</span></div>
+          <div className="font-display text-4xl mt-1">{streak ?? "—"} <span className="text-base text-muted-foreground">days</span></div>
         </GlassCard>
         <GlassCard>
           <div className="text-sm text-muted-foreground">Total momentum</div>

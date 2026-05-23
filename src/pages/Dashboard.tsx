@@ -21,6 +21,7 @@ export default function Dashboard() {
   const loadingCharts = prod.isLoading;
   const loadingTasks = tasks.isLoading;
   const isLoading = loadingStats || loadingCharts || loadingTasks;
+  const streak = hist.data?.current_streak ?? prod.data?.current_streak ?? dash.data?.current_streak;
 
   const trendData = React.useMemo(() => {
     const raw = prod.data?.trend || [];
@@ -56,7 +57,7 @@ export default function Dashboard() {
           <Stat icon={<ListTodo className="size-5" />} label="Active tasks" value={dash.data?.active_tasks ?? 0} accent />
           <Stat icon={<CheckCircle2 className="size-5" />} label="Completed" value={dash.data?.completed_tasks ?? 0} />
           <Stat icon={<Target className="size-5" />} label="Completion" value={`${Math.round(dash.data?.completion_rate ?? 0)}%`} />
-          <Stat icon={<Flame className="size-5" />} label="Streak" value={`${hist.data?.current_streak ?? 0}d`} />
+          <Stat icon={<Flame className="size-5" />} label="Streak" value={streak != null ? `${streak}d` : "—"} />
         </div>
 
       <div className="grid lg:grid-cols-3 gap-4">
@@ -192,4 +193,3 @@ function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: st
     </GlassCard>
   );
 }
-
