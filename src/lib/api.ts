@@ -29,7 +29,7 @@ export interface TaskUpdateInput {
 export interface PaginatedTasks { items: Task[]; total: number; limit: number; offset: number }
 export interface DashboardStats {
   total_tasks: number; completed_tasks: number; active_tasks: number;
-  categories: number; completion_rate: number;
+  categories: number; current_streak: number; completion_rate: number;
 }
 export interface HistorySummary {
   started_at: string; since_start_total_tasks: number; since_start_completed_tasks: number;
@@ -45,6 +45,7 @@ export interface ProductivityStats {
   month_total_tasks: number; month_completed_tasks: number; month_completion_rate: number;
   week_total_tasks: number; week_completed_tasks: number; week_completion_rate: number;
   day_total_tasks: number; day_completed_tasks: number; day_completion_rate: number;
+  current_streak: number;
   category_breakdown: CategoryBreakdownItem[] | null;
   trend: TrendPoint[];
   updated_at: string;
@@ -151,4 +152,3 @@ export const api = {
   productivity: () => request<ProductivityStats>("/stats/productivity"),
   categoryCompletion: (days = 30) => request<CategoryBreakdownItem[]>(`/stats/category-completion?days=${days}`),
 };
-
