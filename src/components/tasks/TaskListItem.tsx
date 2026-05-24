@@ -276,7 +276,7 @@ export function TaskListItem({
 
             {/* Title + tag row */}
             <div className="flex-1 min-w-0">
-              <div className={`text-sm font-medium truncate leading-tight ${
+              <div className={`text-sm font-medium break-words leading-tight ${
                 task.completed ? "line-through text-muted-foreground/50" : "text-foreground"
               }`}>
                 {task.title}

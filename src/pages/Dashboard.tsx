@@ -166,7 +166,7 @@ export default function Dashboard() {
                 <li key={t.id} className="py-3 flex items-center gap-3">
                   <span className={`size-2.5 rounded-full ${t.completed ? "bg-emerald-400" : "bg-primary"}`} />
                   <div className="flex-1 min-w-0">
-                    <div className={`truncate ${t.completed ? "line-through text-muted-foreground" : ""}`}>{t.title}</div>
+                    <div className={`break-words ${t.completed ? "line-through text-muted-foreground" : ""}`}>{t.title}</div>
                     {t.due_time && <div className="text-xs text-muted-foreground">Due {t.due_time}</div>}
                   </div>
                   {t.priority && <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 border border-white/10 capitalize">{t.priority}</span>}
