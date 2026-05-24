@@ -13,7 +13,7 @@ export function AppShell() {
       const isMac = typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const modifier = isMac ? e.metaKey : e.ctrlKey;
       
-      if (e.key.toLowerCase() === 'n' && modifier) {
+      if (e.key.toLowerCase() === 'u' && modifier) {
         e.preventDefault();
         navigate('/tasks?new=true');
       }

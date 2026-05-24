@@ -57,7 +57,7 @@ export function Sidebar() {
           <div className="text-xs text-muted-foreground">Tip</div>
           <div className="text-sm">
             Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-xs">
-              {typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0 ? '⌘N' : 'Ctrl+N'}
+              {typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0 ? '⌘U' : 'Ctrl+U'}
             </kbd> to add a task
           </div>
         </div>
