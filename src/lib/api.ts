@@ -51,7 +51,8 @@ export interface ProductivityStats {
   updated_at: string;
 }
 
-const DEFAULT_BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
+const defaultHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
+const DEFAULT_BASE = (import.meta as any).env?.VITE_API_URL || `http://${defaultHost}:8000`;
 
 export function getApiBase(): string {
   if (typeof window === "undefined") return DEFAULT_BASE;
