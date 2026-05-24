@@ -58,7 +58,7 @@ export default function Insights() {
         </GlassCard>
         <GlassCard>
           <div className="text-sm text-muted-foreground">Since</div>
-          <div className="font-display text-2xl mt-1">{sinceDate ? new Date(sinceDate).toLocaleDateString() : "—"}</div>
+          <div className="font-display text-2xl mt-1">{sinceDate ? new Date(sinceDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) : "—"}</div>
         </GlassCard>
       </div>
       </div>
