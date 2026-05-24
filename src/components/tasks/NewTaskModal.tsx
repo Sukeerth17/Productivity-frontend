@@ -203,6 +203,14 @@ export function NewTaskModal({
                   autoFocus 
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)} 
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (title.trim() && !(categories.length > 0 && !categoryId) && !create.isPending) {
+                        handleCreate();
+                      }
+                    }
+                  }}
                   placeholder="What's next?"
                   className="h-14 px-5 text-lg rounded-2xl bg-white/5 border-white/10 focus:bg-white/[0.08] transition-all duration-300 placeholder:text-white/20" 
                 />
@@ -214,6 +222,14 @@ export function NewTaskModal({
                   {categories.length === 0 ? (
                     <div className="flex gap-2">
                       <Input value={newCat} onChange={(e) => setNewCat(e.target.value)} placeholder="New category"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (newCat.trim() && !createCat.isPending) {
+                              createCat.mutate();
+                            }
+                          }
+                        }}
                         className="rounded-xl bg-white/5 border-white/10" />
                       <button disabled={!newCat.trim() || createCat.isPending} onClick={() => createCat.mutate()}
                         className="px-4 rounded-xl bg-primary text-primary-foreground disabled:opacity-60 transition-all active:scale-95">

@@ -152,6 +152,7 @@ export default function Auth({ mode }: { mode: "login" | "signup" }) {
           )}
 
           <motion.button
+            type="submit"
             whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.985 }}
             disabled={loading}
             className="w-full py-3 rounded-xl bg-gradient-primary text-primary-foreground font-medium shadow-glow disabled:opacity-60 flex items-center justify-center gap-2"
