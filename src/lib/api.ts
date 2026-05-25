@@ -51,8 +51,16 @@ export interface ProductivityStats {
   updated_at: string;
 }
 
-const defaultHost = typeof window !== "undefined" ? window.location.hostname : "localhost";
-const DEFAULT_BASE = (import.meta as any).env?.VITE_API_URL || `http://${defaultHost}:8000`;
+let DEFAULT_BASE = (import.meta as any).env?.VITE_API_URL || "http://localhost:8000";
+if (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+  try {
+    const url = new URL(DEFAULT_BASE);
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+      url.hostname = window.location.hostname;
+      DEFAULT_BASE = url.toString().replace(/\/$/, "");
+    }
+  } catch (e) {}
+}
 
 export function getApiBase(): string {
   if (typeof window === "undefined") return DEFAULT_BASE;

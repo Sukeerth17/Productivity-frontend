@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, Calendar as CalendarIcon, ChevronDown } from "lucide-react";
 import { api, type Priority } from "@/lib/api";
@@ -24,14 +24,15 @@ import { cn } from "@/lib/utils";
 
 export function NewTaskModal({ 
   onClose, 
-  categories, 
   defaultCategoryId 
 }: { 
   onClose: () => void; 
-  categories: { id: string; name: string }[];
   defaultCategoryId?: string;
 }) {
   const qc = useQueryClient();
+  const catsQuery = useQuery({ queryKey: ["categories"], queryFn: api.listCategories });
+  const categories = catsQuery.data ?? [];
+  
   const modalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   

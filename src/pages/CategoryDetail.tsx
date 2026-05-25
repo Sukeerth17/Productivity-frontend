@@ -219,7 +219,6 @@ export default function CategoryDetail() {
         {showNew && (
           <NewTaskModal 
             onClose={() => setShowNew(false)} 
-            categories={cats.data ?? []} 
             defaultCategoryId={id} 
           />
         )}

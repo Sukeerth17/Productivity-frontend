@@ -40,13 +40,7 @@ export default function Tasks() {
   const [filterDate, setFilterDate]         = useState<"all" | "today">("today");
   const [showFuture, setShowFuture]         = useState(false);
 
-  useEffect(() => {
-    if (searchParams.get("new") === "true") {
-      setShowNew(true);
-      searchParams.delete("new");
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
+
 
   const searchFilter = searchParams.get("search") || "";
 
@@ -315,7 +309,7 @@ export default function Tasks() {
         )}
 
       <AnimatePresence>
-        {showNew && <NewTaskModal onClose={() => setShowNew(false)} categories={cats.data ?? []} />}
+        {showNew && <NewTaskModal onClose={() => setShowNew(false)} />}
       </AnimatePresence>
       </div>
     </SmoothLoad>

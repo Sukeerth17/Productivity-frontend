@@ -1,12 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { PageTransition } from "./PageTransition";
 import { MobileNav } from "./MobileNav";
+import { NewTaskModal } from "@/components/tasks/NewTaskModal";
+import { AnimatePresence } from "framer-motion";
 
 export function AppShell() {
   const navigate = useNavigate();
+  const [showGlobalNew, setShowGlobalNew] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -15,13 +18,13 @@ export function AppShell() {
       
       if (e.key.toLowerCase() === 'u' && modifier) {
         e.preventDefault();
-        navigate('/tasks?new=true');
+        setShowGlobalNew(true);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [navigate]);
+  }, []);
 
   return (
     <div className="min-h-screen w-full flex">
@@ -35,6 +38,9 @@ export function AppShell() {
         </main>
         <MobileNav />
       </div>
+      <AnimatePresence>
+        {showGlobalNew && <NewTaskModal onClose={() => setShowGlobalNew(false)} />}
+      </AnimatePresence>
     </div>
   );
 }
