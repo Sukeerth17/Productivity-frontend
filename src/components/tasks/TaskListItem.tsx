@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type KeyboardEvent } from "react";
 import { motion } from "framer-motion";
 import { Pencil, Trash2, Loader2, Save, Check } from "lucide-react";
-import { type Task, type Priority } from "@/lib/api";
+import { type Task, type Priority, type HabitFrequency } from "@/lib/api";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -13,6 +13,7 @@ type EditDraft = {
   dueTime: string;
   taskType: "habit" | "one-off";
   startDate: string;
+  habitFrequency: HabitFrequency;
   habitDays: number[];
 };
 
@@ -25,6 +26,7 @@ function makeDraft(task: Task): EditDraft {
     dueTime:    task.due_time ?? "",
     taskType:   task.is_habit ? "habit" : "one-off",
     startDate:  task.start_date ?? "",
+    habitFrequency: task.habit_frequency ?? "daily",
     habitDays:  task.habit_days ?? [],
   };
 }
@@ -61,7 +63,7 @@ export function TaskListItem({
   onSave:         (id: string, payload: {
     title: string; category_id: string; notes: string | null;
     priority: Priority | null; due_time: string | null;
-    is_habit: boolean; start_date: string | null; habit_days: number[] | null;
+    is_habit: boolean; start_date: string | null; habit_frequency: HabitFrequency | null; habit_days: number[] | null;
   }) => void;
   onProgressSave: (id: string, progress: number) => void;
   isSaving: boolean;
@@ -97,7 +99,10 @@ export function TaskListItem({
       due_time:    draft.dueTime.trim() || null,
       is_habit:    draft.taskType === "habit",
       start_date:  draft.startDate || null,
-      habit_days:  draft.taskType === "habit" ? (draft.habitDays.length > 0 ? draft.habitDays : null) : null,
+      habit_frequency: draft.taskType === "habit" ? draft.habitFrequency : null,
+      habit_days:  draft.taskType === "habit" && draft.habitFrequency === "custom_days"
+        ? (draft.habitDays.length > 0 ? draft.habitDays : null)
+        : null,
     });
     setIsEditing(false);
   };
@@ -215,6 +220,15 @@ export function TaskListItem({
           {draft.taskType === "habit" && (
             <div className="space-y-1.5">
               <div className="text-xs text-muted-foreground">Habit Schedule</div>
+              <select
+                value={draft.habitFrequency}
+                onChange={(e) => setDraft((d) => ({ ...d, habitFrequency: e.target.value as HabitFrequency }))}
+                className="w-full px-3 py-2 rounded-xl bg-white/5 border border-white/10 outline-none focus:border-primary/60 text-sm"
+              >
+                <option value="daily">Every day</option>
+                <option value="custom_days">Specific days</option>
+                <option value="alternative_days">Alternative days</option>
+              </select>
               <div className="flex gap-1.5 flex-wrap">
                 {["M","T","W","T","F","S","S"].map((label, i) => (
                   <button
@@ -225,16 +239,19 @@ export function TaskListItem({
                         ? d.habitDays.filter((x) => x !== i)
                         : [...d.habitDays, i],
                     }))}
+                    disabled={draft.habitFrequency !== "custom_days"}
                     className={`size-8 rounded-lg text-[10px] font-medium border transition ${
                       draft.habitDays.includes(i)
                         ? "bg-primary text-primary-foreground border-transparent"
                         : "bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10"
-                    }`}
+                    } ${draft.habitFrequency !== "custom_days" ? "opacity-40 cursor-not-allowed" : ""}`}
                   >{label}</button>
                 ))}
               </div>
               <div className="text-[10px] text-muted-foreground italic">
-                {draft.habitDays.length === 0 ? "Repeats daily" : "Repeats on selected days"}
+                {draft.habitFrequency === "daily" && "Repeats daily"}
+                {draft.habitFrequency === "alternative_days" && "Repeats every other day"}
+                {draft.habitFrequency === "custom_days" && (draft.habitDays.length === 0 ? "Repeats daily" : "Repeats on selected days")}
               </div>
             </div>
           )}
@@ -323,6 +340,12 @@ export function TaskListItem({
                     <span className="text-[11px] text-muted-foreground">
                       {task.habit_days.map((d) => ["Mo","Tu","We","Th","Fr","Sa","Su"][d]).join(" ")}
                     </span>
+                  </>
+                )}
+                {task.is_habit && task.habit_frequency === "alternative_days" && (
+                  <>
+                    <span className="text-white/15 text-[10px] select-none">·</span>
+                    <span className="text-[11px] text-muted-foreground">Alt days</span>
                   </>
                 )}
               </div>

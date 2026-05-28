@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, Loader2, Filter, X, Pencil, Save, CalendarClock } from "lucide-react";
-import { api, type Priority, type Task } from "@/lib/api";
+import { api, type HabitFrequency, type Priority, type Task } from "@/lib/api";
 import { GlassCard } from "@/components/glass/GlassCard";
 import TasksSkeleton from "@/components/skeletons/TasksSkeleton";
 import { SmoothLoad } from "@/components/glass/SmoothLoad";
@@ -329,6 +329,7 @@ function Section({ title, items, cats, onToggle, onDelete, onSave, onProgressSav
     due_time: string | null;
     is_habit: boolean;
     start_date: string | null;
+    habit_frequency: HabitFrequency | null;
     habit_days: number[] | null;
   }) => void;
   onProgressSave: (id: string, progress: number) => void;

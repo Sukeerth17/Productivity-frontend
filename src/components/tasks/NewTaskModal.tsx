@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, Calendar as CalendarIcon, ChevronDown } from "lucide-react";
-import { api, type Priority } from "@/lib/api";
+import { api, type HabitFrequency, type Priority } from "@/lib/api";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -44,7 +44,7 @@ export function NewTaskModal({
   const [newCat, setNewCat] = useState("");
   const [isHabit, setIsHabit] = useState(false);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [habitSchedule, setHabitSchedule] = useState<"daily" | "specific">("daily");
+  const [habitSchedule, setHabitSchedule] = useState<HabitFrequency>("daily");
   const [habitDays, setHabitDays] = useState<number[]>([]);
   const [askGeneral, setAskGeneral] = useState(false);
 
@@ -65,7 +65,7 @@ export function NewTaskModal({
 
   const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const toggleDay = (d: number) => setHabitDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
-  const resolvedHabitDays = isHabit && habitSchedule === "specific" && habitDays.length > 0 ? habitDays : null;
+  const resolvedHabitDays = isHabit && habitSchedule === "custom_days" && habitDays.length > 0 ? habitDays : null;
 
   const createCat = useMutation({
     mutationFn: () => api.createCategory({ name: newCat.trim() }),
@@ -82,6 +82,7 @@ export function NewTaskModal({
       due_time: dueTime || null,
       is_habit: isHabit,
       start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
+      habit_frequency: isHabit ? habitSchedule : null,
       habit_days: resolvedHabitDays,
     }),
     onMutate: async () => {
@@ -144,6 +145,7 @@ export function NewTaskModal({
         due_time: dueTime || null,
         is_habit: isHabit,
         start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
+        habit_frequency: isHabit ? habitSchedule : null,
         habit_days: resolvedHabitDays,
       });
       toast.success("Category 'General' and task added");
@@ -342,14 +344,19 @@ export function NewTaskModal({
                             "flex-1 py-2 rounded-lg text-[10px] uppercase tracking-widest transition-all",
                             habitSchedule === "daily" ? "bg-primary/20 text-primary" : "text-white/20 hover:text-white/40"
                           )}>Every day</button>
-                        <button type="button" onClick={() => setHabitSchedule("specific")}
+                        <button type="button" onClick={() => setHabitSchedule("custom_days")}
                           className={cn(
                             "flex-1 py-2 rounded-lg text-[10px] uppercase tracking-widest transition-all",
-                            habitSchedule === "specific" ? "bg-primary/20 text-primary" : "text-white/20 hover:text-white/40"
+                            habitSchedule === "custom_days" ? "bg-primary/20 text-primary" : "text-white/20 hover:text-white/40"
                           )}>Specific days</button>
+                        <button type="button" onClick={() => setHabitSchedule("alternative_days")}
+                          className={cn(
+                            "flex-1 py-2 rounded-lg text-[10px] uppercase tracking-widest transition-all",
+                            habitSchedule === "alternative_days" ? "bg-primary/20 text-primary" : "text-white/20 hover:text-white/40"
+                          )}>Alt days</button>
                       </div>
                       
-                      {habitSchedule === "specific" && (
+                      {habitSchedule === "custom_days" && (
                         <div className="flex justify-between">
                           {DAY_LABELS.map((label, i) => (
                             <button 

@@ -2,6 +2,7 @@
 // Configure VITE_API_URL or set localStorage("api_base") to override.
 
 export type Priority = "low" | "medium" | "high";
+export type HabitFrequency = "daily" | "custom_days" | "alternative_days";
 
 export interface User { id: string; name: string; email: string; created_at: string }
 export interface AuthResponse { token: string; user: User }
@@ -10,7 +11,7 @@ export interface SubTask { id: string; title: string; completed: boolean; positi
 export interface Task {
   id: string; title: string; category_id: string; notes: string | null;
   completed: boolean; is_habit: boolean; priority: Priority | null; due_time: string | null;
-  start_date: string | null; habit_days: number[] | null;
+  start_date: string | null; habit_frequency: HabitFrequency; habit_days: number[] | null;
   progress: number;
   created_at: string; completed_at: string | null; updated_at: string; subtasks: SubTask[];
 }
@@ -23,6 +24,7 @@ export interface TaskUpdateInput {
   priority?: Priority | null;
   due_time?: string | null;
   start_date?: string | null;
+  habit_frequency?: HabitFrequency | null;
   habit_days?: number[] | null;
   progress?: number;
 }
@@ -148,7 +150,7 @@ export const api = {
     const qs = p.toString();
     return request<PaginatedTasks>(`/tasks${qs ? `?${qs}` : ""}`);
   },
-  createTask: (b: { title: string; category_id: string; notes?: string; priority?: Priority | null; due_time?: string | null; is_habit?: boolean; start_date?: string | null; habit_days?: number[] | null }) =>
+  createTask: (b: { title: string; category_id: string; notes?: string; priority?: Priority | null; due_time?: string | null; is_habit?: boolean; start_date?: string | null; habit_frequency?: HabitFrequency | null; habit_days?: number[] | null }) =>
     request<Task>("/tasks", { method: "POST", body: JSON.stringify(b) }),
   updateTask: (id: string, b: TaskUpdateInput) =>
     request<Task>(`/tasks/${id}`, { method: "PATCH", body: JSON.stringify(b) }),
