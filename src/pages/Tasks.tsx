@@ -20,6 +20,23 @@ import {
 
 const PRIORITIES: (Priority | "all")[] = ["all", "low", "medium", "high"];
 
+const taskTitleSorter = new Intl.Collator(undefined, {
+  numeric: true,
+  sensitivity: "base",
+});
+
+function sortTasksByTitle(items: Task[]) {
+  return [...items].sort((a, b) => {
+    const titleComparison = taskTitleSorter.compare(a.title, b.title);
+    if (titleComparison !== 0) return titleComparison;
+
+    const createdComparison = taskTitleSorter.compare(a.created_at, b.created_at);
+    if (createdComparison !== 0) return createdComparison;
+
+    return a.id.localeCompare(b.id);
+  });
+}
+
 function patchTaskInLists(qc: ReturnType<typeof useQueryClient>, taskId: string, updater: (task: Task) => Task) {
   qc.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
     if (!old?.items) return old;
@@ -135,7 +152,12 @@ export default function Tasks() {
 
   const grouped = useMemo(() => {
     const items = tasks.data?.items ?? [];
-    return { active: items.filter((t) => !t.completed), done: items.filter((t) => t.completed) };
+    const sortedItems = sortTasksByTitle(items);
+
+    return {
+      active: sortedItems.filter((t) => !t.completed),
+      done: sortedItems.filter((t) => t.completed),
+    };
   }, [tasks.data]);
 
   const isLoading = tasks.isLoading || cats.isLoading;
@@ -273,7 +295,7 @@ export default function Tasks() {
             </div>
             <Section
               title="Upcoming"
-              items={tasks.data?.items ?? []}
+              items={sortTasksByTitle(tasks.data?.items ?? [])}
               cats={cats.data ?? []}
               onToggle={(id) => toggle.mutate(id)}
               onDelete={(id) => del.mutate(id)}
